@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package edu.snu.cms.reef.mist.wordcounter;
+package edu.snu.cms.reef.mist.wordgenerator;
 
 import org.apache.reef.io.network.Message;
 import org.apache.reef.wake.remote.transport.LinkListener;
@@ -25,9 +25,9 @@ import org.apache.reef.wake.remote.transport.LinkListener;
 import java.net.SocketAddress;
 
 /**
- * LinkListener for WordCounter.
+ * LinkListener for WordGenerator.
  */
-public class WordCounterLinkListener implements LinkListener<Message<String>> {
+public class WordGeneratorLinkListener implements LinkListener<Message<String>> {
   @Override
   public void onSuccess(final Message<String> message) {
   }

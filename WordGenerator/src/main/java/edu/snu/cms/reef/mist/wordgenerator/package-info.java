@@ -20,4 +20,4 @@
 /**
  * Created by Taehun on 15. 10. 2..
  */
-package edu.snu.cms.reef.mist.wordcounter;
+package edu.snu.cms.reef.mist.wordgenerator;

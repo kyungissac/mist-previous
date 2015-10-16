@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.cms.reef.mist.wordcounter;
+package edu.snu.cms.reef.mist.wordgenerator;
 
 import org.apache.reef.exception.evaluator.NetworkException;
 import org.apache.reef.io.network.Connection;
@@ -33,7 +33,6 @@ import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.task.Task;
 import org.apache.reef.task.events.DriverMessage;
-import org.apache.reef.task.events.SuspendEvent;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.Identifier;
 import org.apache.reef.wake.IdentifierFactory;
@@ -41,15 +40,14 @@ import org.apache.reef.wake.remote.impl.StringCodec;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * A 'WordGenerator' Task.
  */
-@Unit
 public final class WordGeneratorTask implements Task {
 
   private final Random rand;
@@ -60,13 +58,24 @@ public final class WordGeneratorTask implements Task {
 
   private final String senderName;
   private final NetworkConnectionService ncs;
+  private IdentifierFactory idFac;
+  private Identifier connId;
 
   private static final Logger LOG = Logger.getLogger(WordGeneratorTask.class.getName());
   private final List<Connection<String>> connectionList;
 
-  private static class WordGeneratorEventHandler<String> implements EventHandler<Message<String>> {
+  private class WordGeneratorEventHandler implements EventHandler<Message<String>> {
     @Override
     public void onNext(final Message<String> message) {
+      final Iterator<java.lang.String> iter = message.getData().iterator();
+      while(iter.hasNext()) {
+        String receiverName = iter.next();
+        final Identifier receiverId = idFac.getNewInstance(receiverName);
+        ConnectionFactory<java.lang.String> connFac = ncs.getConnectionFactory(connId);
+        synchronized (connectionList) {
+          connectionList.add(connFac.newConnection(receiverId));
+        }
+      }
     }
   }
 
@@ -86,34 +95,15 @@ public final class WordGeneratorTask implements Task {
     rand = new Random();
   }
 
-  public class DriverMsgHandler implements EventHandler<DriverMessage> {
-    @Override
-    public void onNext(final DriverMessage driverMessage) {
-      final byte[] message = driverMessage.get().get();
-      String receiverName = new String(message);
-      final Injector injector = Tang.Factory.getTang().newInjector();
-      final IdentifierFactory idFac;
-      try {
-        idFac = injector.getNamedInstance(NetworkConnectionServiceIdFactory.class);
-        final Identifier connId = idFac.getNewInstance("connection");
-        final Identifier senderId = idFac.getNewInstance(senderName);
-        final Identifier receiverId = idFac.getNewInstance(receiverName);
-        ncs.registerConnectionFactory(connId, new StringCodec(), new WordGeneratorEventHandler<String>(),
-            new WordCounterLinkListener(), senderId);
-
-        ConnectionFactory<String> connFac = ncs.getConnectionFactory(connId);
-        synchronized (connectionList) {
-          connectionList.add(connFac.newConnection(receiverId));
-        }
-      } catch (InjectionException e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
   @Override
   public byte[] call(final byte[] memento) {
     try {
+      final Injector injector = Tang.Factory.getTang().newInjector();
+      idFac = injector.getNamedInstance(NetworkConnectionServiceIdFactory.class);
+      connId = idFac.getNewInstance("connection");
+      final Identifier senderId = idFac.getNewInstance(WordGeneratorTask.this.senderName);
+      ncs.registerConnectionFactory(connId, new StringCodec(), new WordGeneratorEventHandler(),
+          new WordGeneratorLinkListener(), senderId);
       while(true) {
         synchronized (connectionList) {
           for (Connection<String> conn : connectionList) {
@@ -127,6 +117,8 @@ public final class WordGeneratorTask implements Task {
     } catch (InterruptedException e) {
       e.printStackTrace();
     } catch (NetworkException e) {
+      e.printStackTrace();
+    } catch (InjectionException e) {
       e.printStackTrace();
     }
     return null;

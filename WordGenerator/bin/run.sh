@@ -22,7 +22,7 @@
 # ./run.sh org.apache.reef.examples.hello.HelloREEF
 
 # RUNTIME
-SELF_JAR=./target/wordcounter-1.0-shaded.jar
+SELF_JAR=./target/wordgenerator-1.0-shaded.jar
 
 LOGGING_CONFIG='-Djava.util.logging.config.class=org.apache.reef.util.logging.Config'
 
@@ -30,7 +30,7 @@ CLASSPATH=$YARN_HOME/share/hadoop/common/*:$YARN_HOME/share/hadoop/common/lib/*:
 
 YARN_CONF_DIR=$YARN_HOME/etc/hadoop
 
-CMD="java -cp $YARN_CONF_DIR:$SELF_JAR:$CLASSPATH $LOCAL_RUNTIME_TMP $LOGGING_CONFIG edu.snu.cms.reef.mist.wordcounter.WordCounterClient"
+CMD="java -cp $YARN_CONF_DIR:$SELF_JAR:$CLASSPATH $LOCAL_RUNTIME_TMP $LOGGING_CONFIG edu.snu.cms.reef.mist.wordgenerator.WordGeneratorClient"
 
 mvn clean package
 rm -rf ./REEF_LOCAL_RUNTIME

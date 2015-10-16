@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.cms.reef.mist.wordcounter;
+package edu.snu.cms.reef.mist.wordgenerator;
 
 import org.apache.reef.driver.context.ActiveContext;
 import org.apache.reef.driver.context.ContextConfiguration;
@@ -41,41 +41,29 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Driver code for the WordCounter Application.
+ * Driver code for the WordGenerator Application.
  */
 @Unit
-public final class WordCounterDriver {
+public final class WordGeneratorDriver {
 
-  private static final Logger LOG = Logger.getLogger(WordCounterDriver.class.getName());
+  private static final Logger LOG = Logger.getLogger(WordGeneratorDriver.class.getName());
   private final EvaluatorRequestor requestor;
   private final NameServer nameServer;
-  private final String senderName, receiverName;
-  private final AtomicInteger submittedContext;
-  private final AtomicInteger submittedTask;
-  private final AtomicInteger senderTaskRunning;
+  private final String senderName;
   private final String driverHostAddress;
-  private RunningTask senderTask;
-
   /**
    * Job driver constructor - instantiated via TANG.
    *
    * @param requestor evaluator requestor object used to create new evaluator containers.
    */
   @Inject
-  private WordCounterDriver(final EvaluatorRequestor requestor) throws UnknownHostException, InjectionException {
+  private WordGeneratorDriver(final EvaluatorRequestor requestor) throws UnknownHostException, InjectionException {
     this.requestor = requestor;
-    LOG.log(Level.FINE, "Instantiated 'WordCounterDriver'");
+    LOG.log(Level.FINE, "Instantiated 'WordGeneratorDriver'");
     Injector injector = Tang.Factory.getTang().newInjector();
     this.nameServer = injector.getInstance(NameServer.class);
-    this.submittedContext = new AtomicInteger();
-    this.submittedContext.set(0);
-    this.submittedTask = new AtomicInteger();
-    this.submittedTask.set(0);
     this.senderName = "sender";
-    this.receiverName = "receiver";
     this.driverHostAddress = Inet4Address.getLocalHost().getHostAddress();
-    this.senderTaskRunning = new AtomicInteger();
-    this.senderTaskRunning.set(0);
   }
 
   /**
@@ -84,8 +72,8 @@ public final class WordCounterDriver {
   public final class StartHandler implements EventHandler<StartTime> {
     @Override
     public void onNext(final StartTime startTime) {
-      WordCounterDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
-          .setNumber(2)
+      WordGeneratorDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
+          .setNumber(1)
           .setMemory(64)
           .setNumberOfCores(1)
           .build());
@@ -101,15 +89,9 @@ public final class WordCounterDriver {
     public void onNext(final AllocatedEvaluator allocatedEvaluator) {
       LOG.log(Level.FINE, "Evaluator allocated");
       final Configuration contextConf;
-      if (submittedContext.compareAndSet(0, 1)) {
-        contextConf = ContextConfiguration.CONF
-            .set(ContextConfiguration.IDENTIFIER, "context_0")
-            .build();
-      } else {
-        contextConf = ContextConfiguration.CONF
-            .set(ContextConfiguration.IDENTIFIER, "context_1")
-            .build();
-      }
+      contextConf = ContextConfiguration.CONF
+          .set(ContextConfiguration.IDENTIFIER, "context")
+          .build();
       allocatedEvaluator.submitContext(contextConf);
     }
   }
@@ -120,36 +102,19 @@ public final class WordCounterDriver {
   public final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
     public synchronized void onNext(final ActiveContext context) {
-      if (submittedTask.compareAndSet(0, 1)) {
-        final Configuration partialTaskConf = TaskConfiguration.CONF
-            .set(TaskConfiguration.IDENTIFIER, "sender_task")
-            .set(TaskConfiguration.TASK, WordGeneratorTask.class)
-            .set(TaskConfiguration.ON_MESSAGE, WordGeneratorTask.DriverMsgHandler.class)
-            .build();
-        final Configuration netConf = NameResolverConfiguration.CONF
-            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
-            .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordCounterDriver.this.nameServer.getPort())
-            .build();
-        final JavaConfigurationBuilder taskConfBuilder =
-            Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
-        taskConfBuilder.bindNamedParameter(WordGeneratorTask.SenderName.class, senderName);
-        final Configuration taskConf = taskConfBuilder.build();
-        context.submitTask(taskConf);
-      } else {
-        final Configuration partialTaskConf = TaskConfiguration.CONF
-            .set(TaskConfiguration.IDENTIFIER, "receiver_task")
-            .set(TaskConfiguration.TASK, WordAggregatorTask.class)
-            .build();
-        final Configuration netConf = NameResolverConfiguration.CONF
-            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
-            .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordCounterDriver.this.nameServer.getPort())
-            .build();
-        final JavaConfigurationBuilder taskConfBuilder =
-            Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
-        taskConfBuilder.bindNamedParameter(WordAggregatorTask.ReceiverName.class, receiverName);
-        final Configuration taskConf = taskConfBuilder.build();
-        context.submitTask(taskConf);
-      }
+      final Configuration partialTaskConf = TaskConfiguration.CONF
+          .set(TaskConfiguration.IDENTIFIER, "sender_task")
+          .set(TaskConfiguration.TASK, WordGeneratorTask.class)
+          .build();
+      final Configuration netConf = NameResolverConfiguration.CONF
+          .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
+          .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordGeneratorDriver.this.nameServer.getPort())
+          .build();
+      final JavaConfigurationBuilder taskConfBuilder =
+          Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
+      taskConfBuilder.bindNamedParameter(WordGeneratorTask.SenderName.class, senderName);
+      final Configuration taskConf = taskConfBuilder.build();
+      context.submitTask(taskConf);
     }
   }
 
@@ -159,13 +124,7 @@ public final class WordCounterDriver {
   public final class RunningTaskHandler implements EventHandler<RunningTask> {
     @Override
     public void onNext(final RunningTask task) {
-      if (task.getId().equals("sender_task")) {
-        senderTask = task;
-        senderTaskRunning.set(1);
-      } else {
-        while(senderTaskRunning.get() < 1);
-        senderTask.send(receiverName.getBytes());
-      }
+
     }
   }
 }
