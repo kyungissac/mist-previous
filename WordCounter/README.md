@@ -1,9 +1,5 @@
 ## WordCounter
 
-# Build the application
+# Build and launch the application
 
-```mvn clean install [eclipse:eclipse (for eclipse Users)]```
-  
-# Launch the application
-
-```./bin/run.sh```
+``` ./bin/run.sh ```
