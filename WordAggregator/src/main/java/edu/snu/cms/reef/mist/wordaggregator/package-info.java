@@ -17,23 +17,7 @@
  * under the License.
  */
 
-package edu.snu.cms.reef.mist.wordcounter;
-
-import org.apache.reef.io.network.Message;
-import org.apache.reef.wake.remote.transport.LinkListener;
-
-import java.net.SocketAddress;
-
 /**
- * LinkListener for WordCounter.
+ * Created by Taehun on 15. 10. 2..
  */
-public class WordCounterLinkListener implements LinkListener<Message<String>> {
-  @Override
-  public void onSuccess(final Message<String> message) {
-  }
-
-  @Override
-  public void onException(final Throwable cause, final SocketAddress addr, final Message<String> message) {
-    throw new RuntimeException();
-  }
-}
+package edu.snu.cms.reef.mist.wordaggregator;

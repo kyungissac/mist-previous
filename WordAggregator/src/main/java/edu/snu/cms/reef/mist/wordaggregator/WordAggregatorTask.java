@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.cms.reef.mist.wordcounter;
+package edu.snu.cms.reef.mist.wordaggregator;
 
 import org.apache.reef.io.network.Message;
 import org.apache.reef.io.network.NetworkConnectionService;
@@ -96,13 +96,14 @@ public final class WordAggregatorTask implements Task {
     final Identifier connId = idFac.getNewInstance("connection");
     final Identifier receiverId = idFac.getNewInstance(receiverName);
     ncs.registerConnectionFactory(connId, new StringCodec(), new StringMessageHandler(),
-        new WordCounterLinkListener(), receiverId);
+        new WordAggregatorLinkListener(), receiverId);
     this.receiverName = receiverName;
     LOG.log(Level.FINE, "Receiver Task " + this.receiverName + " Started");
   }
 
   @Override
   public byte[] call(final byte[] memento) {
+    // TODO: Connect with the sender and send itself information.
     while(true) {
       // TODO: Sleep or wait instead of spin
     }

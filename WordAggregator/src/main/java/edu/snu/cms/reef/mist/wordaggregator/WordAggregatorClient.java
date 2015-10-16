@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package edu.snu.cms.reef.mist.wordcounter;
+package edu.snu.cms.reef.mist.wordaggregator;
 
 import org.apache.reef.client.DriverConfiguration;
 import org.apache.reef.client.DriverLauncher;
@@ -32,17 +32,8 @@ import java.util.logging.Logger;
 /**
  * The Client for WordCounter example.
  */
-public final class WordCounterClient {
-  private static final Logger LOG = Logger.getLogger(WordCounterClient.class.getName());
-
-  /**
-   * The upper limit on the number of Evaluators that the local resourcemanager will hand out concurrently.
-   */
-
-  /**
-   * Number of milliseconds to wait for the job to complete.
-   */
-
+public final class WordAggregatorClient {
+  private static final Logger LOG = Logger.getLogger(WordAggregatorClient.class.getName());
 
   /**
    * Local runtime configuration.
@@ -52,22 +43,22 @@ public final class WordCounterClient {
     return YarnClientConfiguration.CONF.build();
   }
   /**
-   * @return the configuration of the WordCounterClient driver.
+   * @return the configuration of the WordAggregatorClient driver.
    */
   private static Configuration getDriverConfiguration() {
     return DriverConfiguration.CONF
         .set(DriverConfiguration.GLOBAL_LIBRARIES,
-            WordCounterClient.class.getProtectionDomain().getCodeSource().getLocation().getFile())
-        .set(DriverConfiguration.DRIVER_IDENTIFIER, "WordCounterDriver")
-        .set(DriverConfiguration.ON_DRIVER_STARTED, WordCounterDriver.StartHandler.class)
-        .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, WordCounterDriver.EvaluatorAllocatedHandler.class)
-        .set(DriverConfiguration.ON_CONTEXT_ACTIVE, WordCounterDriver.ActiveContextHandler.class)
-        .set(DriverConfiguration.ON_TASK_RUNNING, WordCounterDriver.RunningTaskHandler.class)
+            WordAggregatorClient.class.getProtectionDomain().getCodeSource().getLocation().getFile())
+        .set(DriverConfiguration.DRIVER_IDENTIFIER, "WordAggregatorDriver")
+        .set(DriverConfiguration.ON_DRIVER_STARTED, WordAggregatorDriver.StartHandler.class)
+        .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, WordAggregatorDriver.EvaluatorAllocatedHandler.class)
+        .set(DriverConfiguration.ON_CONTEXT_ACTIVE, WordAggregatorDriver.ActiveContextHandler.class)
+        .set(DriverConfiguration.ON_TASK_RUNNING, WordAggregatorDriver.RunningTaskHandler.class)
         .build();
   }
 
   /**
-   * Start Hello REEF job.
+   * Start WordAggregator job.
    *
    * @param args command line parameters.
    * @throws BindException      configuration error.
@@ -86,6 +77,6 @@ public final class WordCounterClient {
   /**
    * Empty private constructor to prohibit instantiation of utility class.
    */
-  private WordCounterClient() {
+  private WordAggregatorClient() {
   }
 }
