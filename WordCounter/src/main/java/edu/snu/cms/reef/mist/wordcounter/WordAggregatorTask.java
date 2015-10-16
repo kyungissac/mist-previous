@@ -47,6 +47,7 @@ public final class WordAggregatorTask implements Task {
 
   private final Map<String, Integer> counts = new HashMap<String, Integer>();
   private int count = 0;
+  private String receiverName;
 
   @NamedParameter
   public static class ReceiverName implements Name<String> {
@@ -78,9 +79,9 @@ public final class WordAggregatorTask implements Task {
         for(String word : words) {
           counter(word);
         }
-        System.out.println("Count = " + count);
+        System.out.println(receiverName + "|Count = " + count);
         for(Map.Entry<String, Integer> item : counts.entrySet()) {
-          System.out.println("Word: " + item.getKey() + ", Count: " + item.getValue());
+          System.out.println(receiverName + "|Word: " + item.getKey() + ", Count: " + item.getValue());
         }
       }
     }
@@ -96,7 +97,8 @@ public final class WordAggregatorTask implements Task {
     final Identifier receiverId = idFac.getNewInstance(receiverName);
     ncs.registerConnectionFactory(connId, new StringCodec(), new StringMessageHandler(),
         new WordCounterLinkListener(), receiverId);
-    LOG.log(Level.FINE, "Receiver Task Started");
+    this.receiverName = receiverName;
+    LOG.log(Level.FINE, "Receiver Task " + this.receiverName + " Started");
   }
 
   @Override
