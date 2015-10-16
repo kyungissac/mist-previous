@@ -52,8 +52,9 @@ public final class WordCounterDriver {
   private final String senderName, receiverName;
   private final AtomicInteger submittedContext;
   private final AtomicInteger submittedTask;
-  private ActiveContext senderContext;
+  private final AtomicInteger senderTaskRunning;
   private final String driverHostAddress;
+  private RunningTask senderTask;
 
   /**
    * Job driver constructor - instantiated via TANG.
@@ -73,6 +74,8 @@ public final class WordCounterDriver {
     this.senderName = "sender";
     this.receiverName = "receiver";
     this.driverHostAddress = Inet4Address.getLocalHost().getHostAddress();
+    this.senderTaskRunning = new AtomicInteger();
+    this.senderTaskRunning.set(0);
   }
 
   /**
@@ -116,10 +119,22 @@ public final class WordCounterDriver {
    */
   public final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
-    public void onNext(final ActiveContext context) {
+    public synchronized void onNext(final ActiveContext context) {
       if (submittedTask.compareAndSet(0, 1)) {
-        // keep context for the sender task
-        senderContext = context;
+        final Configuration partialTaskConf = TaskConfiguration.CONF
+            .set(TaskConfiguration.IDENTIFIER, "sender_task")
+            .set(TaskConfiguration.TASK, WordGeneratorTask.class)
+            .set(TaskConfiguration.ON_MESSAGE, WordGeneratorTask.DriverMsgHandler.class)
+            .build();
+        final Configuration netConf = NameResolverConfiguration.CONF
+            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
+            .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordCounterDriver.this.nameServer.getPort())
+            .build();
+        final JavaConfigurationBuilder taskConfBuilder =
+            Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
+        taskConfBuilder.bindNamedParameter(WordGeneratorTask.SenderName.class, senderName);
+        final Configuration taskConf = taskConfBuilder.build();
+        context.submitTask(taskConf);
       } else {
         final Configuration partialTaskConf = TaskConfiguration.CONF
             .set(TaskConfiguration.IDENTIFIER, "receiver_task")
@@ -144,22 +159,12 @@ public final class WordCounterDriver {
   public final class RunningTaskHandler implements EventHandler<RunningTask> {
     @Override
     public void onNext(final RunningTask task) {
-      if (task.getId().equals("receiver_task")) {
-        // receiver task is ready, submit sender task
-        final Configuration partialTaskConf = TaskConfiguration.CONF
-            .set(TaskConfiguration.IDENTIFIER, "sender_task")
-            .set(TaskConfiguration.TASK, WordGeneratorTask.class)
-            .build();
-        final Configuration netConf = NameResolverConfiguration.CONF
-            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
-            .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordCounterDriver.this.nameServer.getPort())
-            .build();
-        final JavaConfigurationBuilder taskConfBuilder =
-            Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
-        taskConfBuilder.bindNamedParameter(WordGeneratorTask.ReceiverName.class, receiverName);
-        taskConfBuilder.bindNamedParameter(WordGeneratorTask.SenderName.class, senderName);
-        final Configuration taskConf = taskConfBuilder.build();
-        senderContext.submitTask(taskConf);
+      if (task.getId().equals("sender_task")) {
+        senderTask = task;
+        senderTaskRunning.set(1);
+      } else {
+        while(senderTaskRunning.get() < 1);
+        senderTask.send(receiverName.getBytes());
       }
     }
   }

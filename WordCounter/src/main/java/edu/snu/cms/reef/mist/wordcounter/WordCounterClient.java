@@ -21,11 +21,10 @@ package edu.snu.cms.reef.mist.wordcounter;
 import org.apache.reef.client.DriverConfiguration;
 import org.apache.reef.client.DriverLauncher;
 import org.apache.reef.client.LauncherStatus;
-import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
+import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
-import org.apache.reef.util.EnvironmentUtils;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,21 +45,19 @@ public final class WordCounterClient {
 
 
   /**
-   * Local runtime configuration
+   * Local runtime configuration.
    * @return the configuration of the runtime
    */
   private static Configuration getRuntimeConfiguration() {
-    return LocalRuntimeConfiguration.CONF
-        // There are two tasks - sender & receiver
-        .set(LocalRuntimeConfiguration.MAX_NUMBER_OF_EVALUATORS, 3)
-        .build();
+    return YarnClientConfiguration.CONF.build();
   }
   /**
    * @return the configuration of the WordCounterClient driver.
    */
   private static Configuration getDriverConfiguration() {
     return DriverConfiguration.CONF
-        .set(DriverConfiguration.GLOBAL_LIBRARIES, EnvironmentUtils.getClassLocation(WordCounterDriver.class))
+        .set(DriverConfiguration.GLOBAL_LIBRARIES,
+            WordCounterClient.class.getProtectionDomain().getCodeSource().getLocation().getFile())
         .set(DriverConfiguration.DRIVER_IDENTIFIER, "WordCounterDriver")
         .set(DriverConfiguration.ON_DRIVER_STARTED, WordCounterDriver.StartHandler.class)
         .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, WordCounterDriver.EvaluatorAllocatedHandler.class)
