@@ -48,9 +48,7 @@ public final class WordAggregatorDriver {
 
   private static final Logger LOG = Logger.getLogger(WordAggregatorDriver.class.getName());
   private final EvaluatorRequestor requestor;
-  private final NameServer nameServer;
   private final String receiverName;
-  private final String driverHostAddress;
 
   /**
    * Job driver constructor - instantiated via TANG.
@@ -61,10 +59,7 @@ public final class WordAggregatorDriver {
   private WordAggregatorDriver(final EvaluatorRequestor requestor) throws UnknownHostException, InjectionException {
     this.requestor = requestor;
     LOG.log(Level.FINE, "Instantiated 'WordAggregatorDriver'");
-    Injector injector = Tang.Factory.getTang().newInjector();
-    this.nameServer = injector.getInstance(NameServer.class);
     this.receiverName = "receiver";
-    this.driverHostAddress = Inet4Address.getLocalHost().getHostAddress();
   }
 
   /**
@@ -108,8 +103,8 @@ public final class WordAggregatorDriver {
             .set(TaskConfiguration.TASK, WordAggregatorTask.class)
             .build();
         final Configuration netConf = NameResolverConfiguration.CONF
-            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
-            .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordAggregatorDriver.this.nameServer.getPort())
+            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, "10.0.0.4")
+            .set(NameResolverConfiguration.NAME_SERVICE_PORT, 11780)
             .build();
         final JavaConfigurationBuilder taskConfBuilder =
             Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);

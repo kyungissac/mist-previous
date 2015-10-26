@@ -18,6 +18,9 @@
  */
 package edu.snu.cms.reef.mist.wordaggregator;
 
+import org.apache.reef.exception.evaluator.NetworkException;
+import org.apache.reef.io.network.Connection;
+import org.apache.reef.io.network.ConnectionFactory;
 import org.apache.reef.io.network.Message;
 import org.apache.reef.io.network.NetworkConnectionService;
 import org.apache.reef.io.network.impl.config.NetworkConnectionServiceIdFactory;
@@ -47,7 +50,10 @@ public final class WordAggregatorTask implements Task {
 
   private final Map<String, Integer> counts = new HashMap<String, Integer>();
   private int count = 0;
-  private String receiverName;
+  private final String receiverName;
+  private final IdentifierFactory idFac;
+  private final NetworkConnectionService ncs;
+  private final Identifier connId;
 
   @NamedParameter
   public static class ReceiverName implements Name<String> {
@@ -92,10 +98,11 @@ public final class WordAggregatorTask implements Task {
                              @Parameter(ReceiverName.class) final String receiverName)
       throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector();
-    final IdentifierFactory idFac = injector.getNamedInstance(NetworkConnectionServiceIdFactory.class);
-    final Identifier connId = idFac.getNewInstance("connection");
+    idFac = injector.getNamedInstance(NetworkConnectionServiceIdFactory.class);
+    connId = idFac.getNewInstance("connection");
     final Identifier receiverId = idFac.getNewInstance(receiverName);
-    ncs.registerConnectionFactory(connId, new StringCodec(), new StringMessageHandler(),
+    this.ncs = ncs;
+    this.ncs.registerConnectionFactory(connId, new StringCodec(), new StringMessageHandler(),
         new WordAggregatorLinkListener(), receiverId);
     this.receiverName = receiverName;
     LOG.log(Level.FINE, "Receiver Task " + this.receiverName + " Started");
@@ -103,7 +110,17 @@ public final class WordAggregatorTask implements Task {
 
   @Override
   public byte[] call(final byte[] memento) {
-    // TODO: Connect with the sender and send itself information.
+    String senderName = "sender";
+    final Identifier receiverId = idFac.getNewInstance(senderName);
+    ConnectionFactory<String> connFac = ncs.getConnectionFactory(connId);
+    Connection<String> conn = connFac.newConnection(receiverId);
+    try {
+      conn.open();
+      conn.write(receiverName);
+      conn.close();
+    } catch (NetworkException e) {
+      e.printStackTrace();
+    }
     while(true) {
       // TODO: Sleep or wait instead of spin
     }

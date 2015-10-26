@@ -27,6 +27,7 @@ import org.apache.reef.driver.task.RunningTask;
 import org.apache.reef.driver.task.TaskConfiguration;
 import org.apache.reef.io.network.naming.NameResolverConfiguration;
 import org.apache.reef.io.network.naming.NameServer;
+import org.apache.reef.io.network.naming.NameServerParameters;
 import org.apache.reef.tang.*;
 import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.tang.exceptions.InjectionException;
@@ -36,7 +37,6 @@ import org.apache.reef.wake.time.event.StartTime;
 import javax.inject.Inject;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,6 +61,7 @@ public final class WordGeneratorDriver {
     this.requestor = requestor;
     LOG.log(Level.FINE, "Instantiated 'WordGeneratorDriver'");
     Injector injector = Tang.Factory.getTang().newInjector();
+    injector.bindVolatileParameter(NameServerParameters.NameServerPort.class, 11780);
     this.nameServer = injector.getInstance(NameServer.class);
     this.senderName = "sender";
     this.driverHostAddress = Inet4Address.getLocalHost().getHostAddress();
