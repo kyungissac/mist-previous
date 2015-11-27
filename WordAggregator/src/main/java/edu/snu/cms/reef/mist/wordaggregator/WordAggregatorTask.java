@@ -115,11 +115,11 @@ public final class WordAggregatorTask implements Task {
     ConnectionFactory<String> connFac = ncs.getConnectionFactory(connId);
     Connection<String> conn = connFac.newConnection(receiverId);
     try {
-      conn.open();
-      conn.write(receiverName);
-      conn.close();
+	    conn.open();
+	    conn.write(receiverName);
+	    conn.close();
     } catch (NetworkException e) {
-      e.printStackTrace();
+	    e.printStackTrace(); 
     }
     while(true) {
       // TODO: Sleep or wait instead of spin

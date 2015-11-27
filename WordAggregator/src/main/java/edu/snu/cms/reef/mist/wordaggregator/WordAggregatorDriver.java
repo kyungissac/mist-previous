@@ -27,6 +27,7 @@ import org.apache.reef.driver.task.RunningTask;
 import org.apache.reef.driver.task.TaskConfiguration;
 import org.apache.reef.io.network.naming.NameResolverConfiguration;
 import org.apache.reef.io.network.naming.NameServer;
+import org.apache.reef.io.network.naming.NameServerParameters;
 import org.apache.reef.tang.*;
 import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.tang.exceptions.InjectionException;
@@ -49,6 +50,7 @@ public final class WordAggregatorDriver {
   private static final Logger LOG = Logger.getLogger(WordAggregatorDriver.class.getName());
   private final EvaluatorRequestor requestor;
   private final String receiverName;
+  //private final NameServer nameServer;
 
   /**
    * Job driver constructor - instantiated via TANG.
@@ -59,6 +61,10 @@ public final class WordAggregatorDriver {
   private WordAggregatorDriver(final EvaluatorRequestor requestor) throws UnknownHostException, InjectionException {
     this.requestor = requestor;
     LOG.log(Level.FINE, "Instantiated 'WordAggregatorDriver'");
+    Injector injector = Tang.Factory.getTang().newInjector();
+    //injector.bindVolatileParameter(NameServerParameters.NameServerAddr.class, "192.168.0.64"); 
+    //injector.bindVolatileParameter(NameServerParameters.NameServerPort.class, 11780);
+    //this.nameServer = injector.getInstance(NameServer.class);
     this.receiverName = "receiver";
   }
 
@@ -103,7 +109,7 @@ public final class WordAggregatorDriver {
             .set(TaskConfiguration.TASK, WordAggregatorTask.class)
             .build();
         final Configuration netConf = NameResolverConfiguration.CONF
-            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, "10.0.0.4")
+            .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, "master")
             .set(NameResolverConfiguration.NAME_SERVICE_PORT, 11780)
             .build();
         final JavaConfigurationBuilder taskConfBuilder =
