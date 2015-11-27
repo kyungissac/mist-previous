@@ -28,11 +28,13 @@ import org.apache.reef.driver.task.TaskConfiguration;
 import org.apache.reef.io.network.naming.NameResolverConfiguration;
 import org.apache.reef.io.network.naming.NameServer;
 import org.apache.reef.io.network.naming.NameServerParameters;
+import org.apache.reef.io.network.impl.config.NetworkConnectionServiceIdFactory;
 import org.apache.reef.tang.*;
 import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.time.event.StartTime;
+import org.apache.reef.io.network.naming.parameters.NameResolverIdentifierFactory;
 
 import javax.inject.Inject;
 import java.net.Inet4Address;
@@ -51,6 +53,7 @@ public final class WordGeneratorDriver {
   private final NameServer nameServer;
   private final String senderName;
   private final String driverHostAddress;
+  private final Injector injector;
   /**
    * Job driver constructor - instantiated via TANG.
    *
@@ -60,11 +63,13 @@ public final class WordGeneratorDriver {
   private WordGeneratorDriver(final EvaluatorRequestor requestor) throws UnknownHostException, InjectionException {
     this.requestor = requestor;
     LOG.log(Level.FINE, "Instantiated 'WordGeneratorDriver'");
-    Injector injector = Tang.Factory.getTang().newInjector();
+    injector = Tang.Factory.getTang().newInjector();
     injector.bindVolatileParameter(NameServerParameters.NameServerPort.class, 11780);
+    //injector.bindVolatileParameter(NameServerParameters.NameServerIdentifierFactory.class,
+      //injector.getNamedInstance(NetworkConnectionServiceIdFactory.class)); 
     this.nameServer = injector.getInstance(NameServer.class);
     this.senderName = "sender";
-    this.driverHostAddress = Inet4Address.getLocalHost().getHostAddress();
+    this.driverHostAddress = "master";
   }
 
   /**
@@ -110,6 +115,7 @@ public final class WordGeneratorDriver {
       final Configuration netConf = NameResolverConfiguration.CONF
           .set(NameResolverConfiguration.NAME_SERVER_HOSTNAME, driverHostAddress)
           .set(NameResolverConfiguration.NAME_SERVICE_PORT, WordGeneratorDriver.this.nameServer.getPort())
+          //.set(NameResolverConfiguration.IDENTIFIER_FACTORY, (NameResolverIdentifierFactory)injector.getNamedInstance(NetworkConnectionServiceIdFactory.class))
           .build();
       final JavaConfigurationBuilder taskConfBuilder =
           Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
