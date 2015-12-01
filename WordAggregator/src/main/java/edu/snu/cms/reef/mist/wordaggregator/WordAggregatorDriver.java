@@ -24,6 +24,7 @@ import org.apache.reef.driver.evaluator.AllocatedEvaluator;
 import org.apache.reef.driver.evaluator.EvaluatorRequest;
 import org.apache.reef.driver.evaluator.EvaluatorRequestor;
 import org.apache.reef.driver.task.RunningTask;
+import org.apache.reef.driver.task.FailedTask;
 import org.apache.reef.driver.task.TaskConfiguration;
 import org.apache.reef.io.network.naming.NameResolverConfiguration;
 import org.apache.reef.io.network.naming.NameServer;
@@ -137,7 +138,17 @@ public final class WordAggregatorDriver {
   public final class RunningTaskHandler implements EventHandler<RunningTask> {
     @Override
     public void onNext(final RunningTask task) {
+      LOG.log(Level.INFO, "TIME: [TH]Running Task {0}", task.getId());
+    }
+  }
 
+  /**
+   * Handles Running Tasks.
+   */
+  public final class FailedTaskHandler implements EventHandler<FailedTask> {
+    @Override
+    public void onNext(final FailedTask task) {
+      LOG.log(Level.INFO, "TIME: [TH]Failed Task {0}", task.getId());
     }
   }
 }

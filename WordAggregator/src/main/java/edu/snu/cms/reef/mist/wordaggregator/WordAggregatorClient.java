@@ -54,6 +54,7 @@ public final class WordAggregatorClient {
         .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, WordAggregatorDriver.EvaluatorAllocatedHandler.class)
         .set(DriverConfiguration.ON_CONTEXT_ACTIVE, WordAggregatorDriver.ActiveContextHandler.class)
         .set(DriverConfiguration.ON_TASK_RUNNING, WordAggregatorDriver.RunningTaskHandler.class)
+        .set(DriverConfiguration.ON_TASK_FAILED, WordAggregatorDriver.FailedTaskHandler.class)
         .build();
   }
 
