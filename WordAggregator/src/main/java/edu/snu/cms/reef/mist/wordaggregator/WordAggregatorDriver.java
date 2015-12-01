@@ -50,7 +50,8 @@ public final class WordAggregatorDriver {
   private static final Logger LOG = Logger.getLogger(WordAggregatorDriver.class.getName());
   private final EvaluatorRequestor requestor;
   private final String receiverName;
-  //private final NameServer nameServer;
+  private final AtomicInteger submittedContext;
+  private final AtomicInteger submittedTask;
 
   /**
    * Job driver constructor - instantiated via TANG.
@@ -62,9 +63,10 @@ public final class WordAggregatorDriver {
     this.requestor = requestor;
     LOG.log(Level.FINE, "Instantiated 'WordAggregatorDriver'");
     Injector injector = Tang.Factory.getTang().newInjector();
-    //injector.bindVolatileParameter(NameServerParameters.NameServerAddr.class, "192.168.0.64"); 
-    //injector.bindVolatileParameter(NameServerParameters.NameServerPort.class, 11780);
-    //this.nameServer = injector.getInstance(NameServer.class);
+    this.submittedContext = new AtomicInteger();
+    this.submittedContext.set(0);
+    this.submittedTask = new AtomicInteger();
+    this.submittedTask.set(0);
     this.receiverName = "receiver";
   }
 
@@ -74,12 +76,19 @@ public final class WordAggregatorDriver {
   public final class StartHandler implements EventHandler<StartTime> {
     @Override
     public void onNext(final StartTime startTime) {
-      WordAggregatorDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
-          .setNumber(1)
-          .setMemory(64)
-          .setNumberOfCores(1)
-          .build());
-      LOG.log(Level.INFO, "Requested Evaluator.");
+      while (true) {
+        try {
+          WordAggregatorDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
+              .setNumber(1)
+              .setMemory(64)
+              .setNumberOfCores(1)
+              .build());
+          LOG.log(Level.INFO, "Requested Evaluator.");
+          Thread.sleep(1000);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
     }
   }
 
@@ -90,9 +99,10 @@ public final class WordAggregatorDriver {
     @Override
     public void onNext(final AllocatedEvaluator allocatedEvaluator) {
       LOG.log(Level.FINE, "Evaluator allocated");
+      int contextNum = submittedContext.getAndIncrement();
       final Configuration contextConf;
       contextConf = ContextConfiguration.CONF
-        .set(ContextConfiguration.IDENTIFIER, "context_0")
+        .set(ContextConfiguration.IDENTIFIER, "context_"+contextNum)
         .build();
       allocatedEvaluator.submitContext(contextConf);
     }
@@ -104,8 +114,9 @@ public final class WordAggregatorDriver {
   public final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
     public synchronized void onNext(final ActiveContext context) {
+        int taskNum = submittedTask.getAndIncrement();
         final Configuration partialTaskConf = TaskConfiguration.CONF
-            .set(TaskConfiguration.IDENTIFIER, "receiver_task")
+            .set(TaskConfiguration.IDENTIFIER, "receiver_task_"+taskNum)
             .set(TaskConfiguration.TASK, WordAggregatorTask.class)
             .build();
         final Configuration netConf = NameResolverConfiguration.CONF
@@ -114,7 +125,7 @@ public final class WordAggregatorDriver {
             .build();
         final JavaConfigurationBuilder taskConfBuilder =
             Tang.Factory.getTang().newConfigurationBuilder(partialTaskConf, netConf);
-        taskConfBuilder.bindNamedParameter(WordAggregatorTask.ReceiverName.class, receiverName);
+        taskConfBuilder.bindNamedParameter(WordAggregatorTask.ReceiverName.class, receiverName+taskNum);
         final Configuration taskConf = taskConfBuilder.build();
         context.submitTask(taskConf);
     }
