@@ -107,19 +107,22 @@ public final class WordGeneratorTask implements Task {
           new WordGeneratorLinkListener(), senderId);
       while(true) {
         synchronized (connectionList) {
-          for (Connection<String> conn : connectionList) {
-            conn.open();
-            conn.write(generator());
-            conn.close();
+          Iterator<Connection<String>> connIter = connectionList.iterator();
+          while (connIter.hasNext()) {
+            try {
+              Connection<String> conn = connIter.next();
+              conn.open();
+              conn.write(generator());
+              conn.close();
+            } catch (NetworkException e) {
+              e.printStackTrace();
+              connIter.remove();
+            }
           }
         }
         Thread.sleep(1000);
       }
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (NetworkException e) {
-      e.printStackTrace();
-    } catch (InjectionException e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
     return null;
