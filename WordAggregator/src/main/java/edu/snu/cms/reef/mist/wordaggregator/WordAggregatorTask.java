@@ -130,6 +130,8 @@ public final class WordAggregatorTask implements Task {
     } catch (InterruptedException e2) {
 	e2.printStackTrace(); 
     }
+    return null;
   }
+
 }
 
