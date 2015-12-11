@@ -119,10 +119,16 @@ public final class WordAggregatorTask implements Task {
 	    conn.write(receiverName);
 	    conn.close();
     } catch (NetworkException e) {
-	    e.printStackTrace(); 
+	e.printStackTrace(); 
     }
-    while(true) {
-      // TODO: Sleep or wait instead of spin
+
+    try {
+      Object obj = new Object();
+      synchronized (obj) {
+          obj.wait();
+      }
+    } catch (InterruptedException e2) {
+	e2.printStackTrace(); 
     }
   }
 }
