@@ -15,25 +15,15 @@
  */
 package edu.snu.mist.task.executor;
 
-import edu.snu.mist.task.executor.impl.DefaultExecutorTask;
-import org.apache.reef.tang.annotations.DefaultImplementation;
-
 /**
- * ExecutorTask holds an operator and inputs of that operator.
- * It calls operator.onNext(inputs) when .run() is called.
- * This is assigned to an mist executor and runs on the executor.
- * @param <I> input type
+ * Scheduling information for scheduler.
+ * A scheduler can set its own scheduling information to an executor task.
  */
-@DefaultImplementation(DefaultExecutorTask.class)
-public interface ExecutorTask<I> extends Runnable {
-  /**
-   * Sets a scheduling info for scheduler.
-   */
-  void setSchedulingInfo(SchedulingInfo schedInfo);
+public interface SchedulingInfo {
 
   /**
-   * Gets the scheduling info for scheduler.
-   * @return scheduling info
+   * Gets a priority.
+   * @return priority
    */
-  SchedulingInfo getSchedulingInfo();
+  int getPriority();
 }

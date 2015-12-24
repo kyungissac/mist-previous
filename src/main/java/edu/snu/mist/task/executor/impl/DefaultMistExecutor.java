@@ -16,14 +16,13 @@
 package edu.snu.mist.task.executor.impl;
 
 import edu.snu.mist.task.executor.ExecutorTask;
+import edu.snu.mist.task.executor.ExecutorTaskScheduler;
 import edu.snu.mist.task.executor.MistExecutor;
 import org.apache.reef.wake.Identifier;
 import org.apache.reef.wake.WakeParameters;
 
 import javax.inject.Inject;
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,10 +30,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Simple mist executor which uses ThreadPoolExecutor and a priority queue for scheduling.
+ * Default mist executor which uses ThreadPoolExecutor and a blocking queue for scheduling.
  */
-public final class SimpleMistExecutor implements MistExecutor {
-  private static final Logger LOG = Logger.getLogger(SimpleMistExecutor.class.getName());
+public final class DefaultMistExecutor implements MistExecutor {
+  private static final Logger LOG = Logger.getLogger(DefaultMistExecutor.class.getName());
 
   /**
    * An identifier of the mist executor.
@@ -47,14 +46,9 @@ public final class SimpleMistExecutor implements MistExecutor {
   private final ThreadPoolExecutor tpExecutor;
 
   /**
-   * A priority blocking queue for scheduling.
+   * A task's scheduler.
    */
-  private final PriorityBlockingQueue<Runnable> queue;
-
-  /**
-   * A simple executor task's scheduler.
-   */
-  private final SimpleExecutorScheduler scheduler;
+  private final ExecutorTaskScheduler scheduler;
 
   /**
    * A flag if the executor is closed.
@@ -67,22 +61,20 @@ public final class SimpleMistExecutor implements MistExecutor {
   private final long shutdownTimeout = WakeParameters.EXECUTOR_SHUTDOWN_TIMEOUT;
 
   @Inject
-  private SimpleMistExecutor(final Identifier identifier,
-                             final SimpleExecutorScheduler scheduler) {
+  private DefaultMistExecutor(final Identifier identifier,
+                              final ExecutorTaskScheduler scheduler) {
     this.identifier = identifier;
-    this.queue = new PriorityBlockingQueue<>(100, scheduler);
-    this.tpExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, queue);
+    this.tpExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, scheduler);
     this.scheduler = scheduler;
   }
 
   /**
-   * Runs an executor task according to the priority.
+   * Submits an executor task to the thread pool executor.
+   * The thread pool executor pushes the task into the queue (scheduler) and the task is scheduled by the scheduler.
    * @param executorTask an executor task
    */
   @Override
   public void onNext(final ExecutorTask executorTask) {
-    // set executor task's priority
-    scheduler.setPriorityOfExecutorTask(executorTask);
     tpExecutor.submit(executorTask);
   }
 
@@ -92,7 +84,7 @@ public final class SimpleMistExecutor implements MistExecutor {
    */
   @Override
   public int getCurrentLoad() {
-    return queue.size();
+    return scheduler.getCurrentLoad();
   }
 
   /**
@@ -109,27 +101,5 @@ public final class SimpleMistExecutor implements MistExecutor {
         LOG.log(Level.WARNING, "Executor dropped " + droppedRunnables.size() + " tasks.");
       }
     }
-  }
-
-  /**
-   * SimpleExecutorScheduler for scheduling executor tasks.
-   */
-  public interface SimpleExecutorScheduler extends Comparator<Runnable> {
-
-    /**
-     * Sets the priority of the executor task for scheduling.
-     * @param executorTask an executor task
-     * @param <I> input type
-     */
-    <I> void setPriorityOfExecutorTask(final ExecutorTask<I> executorTask);
-
-    /**
-     * Compares two different executor tasks and decides which task has high priority.
-     * @param t1 a task in front of t2
-     * @param t2 a task behind t1
-     * @return -1, 0: maintain the order, 1: swap the order
-     */
-    @Override
-    int compare(Runnable t1, Runnable t2);
   }
 }

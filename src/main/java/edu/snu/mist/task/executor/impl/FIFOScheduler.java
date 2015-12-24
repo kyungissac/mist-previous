@@ -15,36 +15,23 @@
  */
 package edu.snu.mist.task.executor.impl;
 
-import edu.snu.mist.task.executor.ExecutorTask;
+import edu.snu.mist.task.executor.ExecutorTaskScheduler;
 
 import javax.inject.Inject;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * PriorityQueueScheduler schedules executor tasks in executor.
+ * A simple FIFO scheduler which inherits linked blocking queue.
  */
-public final class PriorityQueueScheduler implements SimpleMistExecutor.SimpleExecutorScheduler {
+public final class FIFOScheduler extends LinkedBlockingQueue<Runnable> implements ExecutorTaskScheduler {
 
   @Inject
-  private PriorityQueueScheduler() {
-
+  private FIFOScheduler() {
+    super();
   }
 
   @Override
-  public <I> void setPriorityOfExecutorTask(final ExecutorTask<I> executorTask) {
-
-  }
-
-  @Override
-  public int compare(final Runnable t1, final Runnable t2) {
-    final ExecutorTask et1 = (ExecutorTask)t1;
-    final ExecutorTask et2 = (ExecutorTask)t2;
-
-    if (et1.getPriority() < et2.getPriority()) {
-      return 1;
-    } else if (et1.getPriority() > et2.getPriority()) {
-      return -1;
-    } else {
-      return 0;
-    }
+  public int getCurrentLoad() {
+    return size();
   }
 }

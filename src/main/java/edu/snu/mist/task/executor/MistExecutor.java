@@ -15,15 +15,20 @@
  */
 package edu.snu.mist.task.executor;
 
+import edu.snu.mist.task.executor.impl.DefaultMistExecutor;
+import org.apache.reef.tang.annotations.DefaultImplementation;
 import org.apache.reef.wake.EStage;
 
 /**
  * Mist Executor runs multiple queries on single thread.
  */
+@DefaultImplementation(DefaultMistExecutor.class)
 public interface MistExecutor extends EStage<ExecutorTask> {
 
   /**
-   * Receives an ExecutorTask which computes inputs according to the assigned operators.
+   * Receives an ExecutorTask and runs the task.
+   * An executor task is submitted
+   * when a downstream operator has different executor from that of an upstream operator.
    * @param executorTask an executor task
    */
   @Override

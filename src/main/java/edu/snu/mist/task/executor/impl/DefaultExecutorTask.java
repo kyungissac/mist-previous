@@ -17,6 +17,7 @@ package edu.snu.mist.task.executor.impl;
 
 import com.google.common.collect.ImmutableList;
 import edu.snu.mist.task.executor.ExecutorTask;
+import edu.snu.mist.task.executor.SchedulingInfo;
 import edu.snu.mist.task.operator.Operator;
 
 /**
@@ -36,39 +37,14 @@ public final class DefaultExecutorTask<I> implements ExecutorTask<I> {
   private final ImmutableList<I> inputs;
 
   /**
-   * Priority of the task.
+   * A scheduling information of the task.
    */
-  private int priority;
+  private SchedulingInfo schedulingInfo;
 
   public DefaultExecutorTask(final Operator<I, ?> operator,
                              final ImmutableList<I> inputs) {
-    this(operator, inputs, 0);
-  }
-
-  public DefaultExecutorTask(final Operator<I, ?> operator,
-                             final ImmutableList<I> inputs,
-                             final int priority) {
     this.operator = operator;
     this.inputs = inputs;
-    this.priority = priority;
-  }
-
-  /**
-   * Gets the priority of the task.
-   * @return
-   */
-  @Override
-  public int getPriority() {
-    return priority;
-  }
-
-  /**
-   * Sets the priority of the task.
-   * @param prior priority
-   */
-  @Override
-  public void setPriority(final int prior) {
-    priority = prior;
   }
 
   /**
@@ -77,5 +53,23 @@ public final class DefaultExecutorTask<I> implements ExecutorTask<I> {
   @Override
   public void run() {
     operator.onNext(inputs);
+  }
+
+  /**
+   * Sets a scheduling information.
+   * @param schedInfo
+   */
+  @Override
+  public void setSchedulingInfo(final SchedulingInfo schedInfo) {
+    schedulingInfo = schedInfo;
+  }
+
+  /**
+   * Gets the scheduling information.
+   * @return scheduling info
+   */
+  @Override
+  public SchedulingInfo getSchedulingInfo() {
+    return schedulingInfo;
   }
 }
