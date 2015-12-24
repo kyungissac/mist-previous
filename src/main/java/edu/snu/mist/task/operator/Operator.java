@@ -16,10 +16,9 @@
 package edu.snu.mist.task.operator;
 
 import com.google.common.collect.ImmutableList;
+import edu.snu.mist.task.common.OperatorChainable;
 import edu.snu.mist.task.executor.MistExecutor;
 import org.apache.reef.wake.EventHandler;
-
-import java.util.List;
 
 /**
  * This is an interface of mist physical operator which runs actual computation.
@@ -31,7 +30,7 @@ import java.util.List;
  * If the downstream operators have different executors from the upstream operator's executor,
  * then the upstream operator should execute the downstream operation in different executor.
  */
-public interface Operator<I, O> extends EventHandler<ImmutableList<I>> {
+public interface Operator<I, O> extends EventHandler<ImmutableList<I>>, OperatorChainable<O> {
   
   /**
    * It receives inputs, performs computation,
@@ -52,28 +51,4 @@ public interface Operator<I, O> extends EventHandler<ImmutableList<I>> {
    * @param executor executor
    */
   void assignExecutor(final MistExecutor executor);
-
-  /**
-   * Adds a downstream operator.
-   * @param operator downstream operator
-   */
-  void addDownstreamOperator(final Operator<O, ?> operator);
-
-  /**
-   * Adds downstream operators.
-   * @param operators downstream operators
-   */
-  void addDownstreamOperators(final List<Operator<O, ?>> operators);
-
-  /**
-   * Removes a downstream operator.
-   * @param operator downstream operator
-   */
-  void removeDownstreamOperator(final Operator<O, ?> operator);
-
-  /**
-   * Removes downstream operators.
-   * @param operators downstream operators
-   */
-  void removeDownstreamOperators(final List<Operator<O, ?>> operators);
 }

@@ -15,18 +15,24 @@
  */
 package edu.snu.mist.task.source;
 
+import edu.snu.mist.task.common.OperatorChainable;
+
 /**
  * SourceGenerator generates input stream.
  * It can fetch input data from external systems, such as kafka and HDFS,
  * or receives input data from IoT devices and network connection.
  *
- * After that, it sends the inputs in a push-based manner to OutputEmitter.
- * For batch, it collects inputs as a List and send the List of inputs to OutputEmitter.
+ * After that, it sends the inputs in a push-based manner to downstream operators.
+ * For batch, it collects inputs as a List and send the List of inputs to downstream operators.
+ *
+ * SourceGenerator should forward inputs to executors of the downstream operators by submitting new ExecutorTasks,
+ * instead of calling .onNext(inputs) of the operators.
+ * In mist, source is managed by separated threads different from operator's threads.
  */
-public interface SourceGenerator {
+public interface SourceGenerator<I> extends OperatorChainable<I> {
 
   /**
-   * Start to generate source stream.
+   * Starts to generate source stream and forwards inputs to downstream operators.
    */
   void start();
 }
