@@ -16,14 +16,12 @@
 package edu.snu.mist.task.operator;
 
 import com.google.common.collect.ImmutableList;
-import edu.snu.mist.task.executor.impl.DefaultExecutorTask;
 import edu.snu.mist.task.executor.MistExecutor;
+import edu.snu.mist.task.executor.impl.DefaultExecutorTask;
 import edu.snu.mist.task.operator.operation.immediate.ImmediateOperation;
 import org.apache.reef.wake.Identifier;
 
 import javax.inject.Inject;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,35 +31,19 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <O> output
  */
-final class ImmediateOperator<I, O> implements Operator<I, O> {
+final class ImmediateOperator<I, O> extends BaseOperator<I, O> {
   private static final Logger LOG = Logger.getLogger(ImmediateOperator.class.getName());
-
-  /**
-   * Downstream operators which receives outputs of this operator as inputs.
-   */
-  private final List<Operator<O, ?>> downstreamOperators;
 
   /**
    * Actual computation of this operator.
    */
   private final ImmediateOperation<I, O> operation;
 
-  /**
-   * An assigned executor for this operator.
-   */
-  private MistExecutor executor;
-
-  /**
-   * An identifier of the operator.
-   */
-  private final Identifier identifier;
-
   @Inject
   private ImmediateOperator(final ImmediateOperation<I, O> operation,
                             final Identifier identifier) {
-    this.downstreamOperators = new LinkedList<>();
+    super(identifier);
     this.operation = operation;
-    this.identifier = identifier;
   }
 
   /**
@@ -87,35 +69,5 @@ final class ImmediateOperator<I, O> implements Operator<I, O> {
         dsExecutor.onNext(new DefaultExecutorTask<>(downstreamOp, outputs));
       }
     }
-  }
-
-  @Override
-  public MistExecutor getExecutor() {
-    return executor;
-  }
-
-  @Override
-  public void assignExecutor(final MistExecutor exec) {
-    executor = exec;
-  }
-
-  @Override
-  public void addDownstreamOperator(final Operator<O, ?> operator) {
-    downstreamOperators.add(operator);
-  }
-
-  @Override
-  public void addDownstreamOperators(final List<Operator<O, ?>> operators) {
-    downstreamOperators.addAll(operators);
-  }
-
-  @Override
-  public void removeDownstreamOperator(final Operator<O, ?> operator) {
-    downstreamOperators.remove(operator);
-  }
-
-  @Override
-  public void removeDownstreamOperators(final List<Operator<O, ?>> operators) {
-    downstreamOperators.removeAll(operators);
   }
 }
