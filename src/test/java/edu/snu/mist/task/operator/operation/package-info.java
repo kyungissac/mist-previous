@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * This package contains test cases of streaming operators.
+ * This package contains test cases of operations.
  */
 package edu.snu.mist.task.operator.operation;

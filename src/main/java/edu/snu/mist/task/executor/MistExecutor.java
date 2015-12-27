@@ -20,7 +20,8 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
 import org.apache.reef.wake.EStage;
 
 /**
- * Mist Executor runs multiple queries on single thread.
+ * Mist Executor runs ExecutorTasks on a single thread.
+ * It uses ExecutorTaskScheduler to schedule the executor tasks.
  */
 @DefaultImplementation(DefaultMistExecutor.class)
 public interface MistExecutor extends EStage<ExecutorTask> {

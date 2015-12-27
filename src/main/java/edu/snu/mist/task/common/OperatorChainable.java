@@ -20,7 +20,8 @@ import edu.snu.mist.task.operator.Operator;
 import java.util.List;
 
 /**
- * This interface is used when an object can chain another operators (downstream operators) to forward its outputs.
+ * This interface is used when an object can chain another operators (downstream operators)
+ * in order to forward its outputs to the downstream operators.
  * @param <I> input type of the downstream operator
  */
 public interface OperatorChainable<I> {
@@ -48,4 +49,10 @@ public interface OperatorChainable<I> {
    * @param operators downstream operators
    */
   void removeDownstreamOperators(final List<Operator<I, ?>> operators);
+
+  /**
+   * Gets downstream operators.
+   * @return downstream operators
+   */
+  List<Operator<I, ?>> getDownstreamOperators();
 }

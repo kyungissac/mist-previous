@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * A test package of mist project.
+ * This package contains test cases of immediate operations.
  */
-package edu.snu.mist;
+package edu.snu.mist.task.operator.operation.immediate;

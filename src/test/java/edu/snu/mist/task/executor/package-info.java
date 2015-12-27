@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * A test package of source.
+ * A test package of mist executor.
  */
-package edu.snu.mist.task.source;
+package edu.snu.mist.task.executor;

@@ -26,7 +26,7 @@ import java.util.List;
  * @param <I> input
  * @param <O> output
  */
-abstract class BaseOperator<I, O> implements Operator<I, O> {
+public abstract class BaseOperator<I, O> implements Operator<I, O> {
   /**
    * Downstream operators which receives outputs of this operator as inputs.
    */
@@ -75,5 +75,10 @@ abstract class BaseOperator<I, O> implements Operator<I, O> {
   @Override
   public void removeDownstreamOperators(final List<Operator<O, ?>> operators) {
     downstreamOperators.removeAll(operators);
+  }
+
+  @Override
+  public List<Operator<O, ?>> getDownstreamOperators() {
+    return downstreamOperators;
   }
 }

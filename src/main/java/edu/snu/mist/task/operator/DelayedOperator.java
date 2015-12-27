@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  * @param <I> input type
  * @param <O> output type
  */
-final class DelayedOperator<I, O> extends BaseOperator<I, O> {
+public final class DelayedOperator<I, O> extends BaseOperator<I, O> {
   private static final Logger LOG = Logger.getLogger(DelayedOperator.class.getName());
 
   /**

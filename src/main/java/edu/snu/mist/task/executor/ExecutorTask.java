@@ -28,6 +28,7 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
 public interface ExecutorTask<I> extends Runnable {
   /**
    * Sets a scheduling info for scheduler.
+   * This information can be used for scheduling in a scheduler.
    */
   void setSchedulingInfo(SchedulingInfo schedInfo);
 

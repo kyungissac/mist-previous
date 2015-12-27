@@ -20,10 +20,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * This is an interface of scheduler of executor tasks.
  * ExecutorTaskScheduler implements a blocking queue used in ThreadPoolExecutor.
- * The actually used methods in ThreadPoolExecutor are
+ * The methods actually used in ThreadPoolExecutor are
  * 'offer', 'isEmpty', 'drainTo', 'remove', 'poll', 'take' and 'size'.
- * By implementing these methods, this can schedule the submitted tasks.
+ * By implementing these methods, this can schedule the submitted tasks to the blocking queue.
  */
 public interface ExecutorTaskScheduler extends BlockingQueue<Runnable> {
 
@@ -48,9 +49,5 @@ public interface ExecutorTaskScheduler extends BlockingQueue<Runnable> {
   @Override
   int size();
 
-  /**
-   * Gets current load of the queue.
-   * @return current load
-   */
   int getCurrentLoad();
 }

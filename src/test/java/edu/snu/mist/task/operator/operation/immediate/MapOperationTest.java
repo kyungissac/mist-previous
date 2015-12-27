@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.operator.operation;
+package edu.snu.mist.task.operator.operation.immediate;
 
 import com.google.common.collect.ImmutableList;
-import edu.snu.mist.task.operator.operation.immediate.MapOperation;
 import org.apache.reef.io.network.util.StringIdentifierFactory;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;

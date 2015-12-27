@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * A package of commonly used classes in mist task.
+ * A package for commonly used classes in mist task.
  */
 package edu.snu.mist.task.common;

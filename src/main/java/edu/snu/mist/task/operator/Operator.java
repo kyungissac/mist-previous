@@ -31,7 +31,7 @@ import org.apache.reef.wake.EventHandler;
  * then the upstream operator should execute the downstream operation in different executor.
  */
 public interface Operator<I, O> extends EventHandler<ImmutableList<I>>, OperatorChainable<O> {
-  
+
   /**
    * It receives inputs, performs computation,
    * and forwards the produced outputs to downstream operators.

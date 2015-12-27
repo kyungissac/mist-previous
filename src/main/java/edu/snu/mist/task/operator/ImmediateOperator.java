@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * @param <I> input
  * @param <O> output
  */
-final class ImmediateOperator<I, O> extends BaseOperator<I, O> {
+public final class ImmediateOperator<I, O> extends BaseOperator<I, O> {
   private static final Logger LOG = Logger.getLogger(ImmediateOperator.class.getName());
 
   /**
