@@ -30,6 +30,10 @@ public final class FIFOScheduler extends LinkedBlockingQueue<Runnable> implement
     super();
   }
 
+  /**
+   * Returns the size of queue.
+   * @return
+   */
   @Override
   public int getCurrentLoad() {
     return size();

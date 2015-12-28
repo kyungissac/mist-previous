@@ -49,5 +49,10 @@ public interface ExecutorTaskScheduler extends BlockingQueue<Runnable> {
   @Override
   int size();
 
+  /**
+   * Gets the current load of the tasks.
+   * This can be used for load balance.
+   * @return load
+   */
   int getCurrentLoad();
 }
