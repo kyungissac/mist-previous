@@ -16,8 +16,6 @@
 package edu.snu.mist.task.operator;
 
 import com.google.common.collect.ImmutableList;
-import edu.snu.mist.task.executor.MistExecutor;
-import edu.snu.mist.task.executor.impl.DefaultExecutorTask;
 import edu.snu.mist.task.operator.operation.delayed.DelayedOperation;
 import org.apache.reef.wake.Identifier;
 
@@ -52,16 +50,7 @@ public final class DelayedOperator<I, O> extends BaseOperator<I, O> {
     operation.setOutputHandler(delayedEvent -> {
         LOG.log(Level.FINE, "{0} computes {1} to {2}",
             new Object[] {identifier, delayedEvent.getDependentInputs(), delayedEvent.getDelayedOutputs()});
-        for (final Operator<O, ?> downstreamOp : downstreamOperators) {
-          final MistExecutor dsExecutor = downstreamOp.getExecutor();
-          if (dsExecutor.equals(executor)) {
-            // just do function call instead of context switching.
-            downstreamOp.onNext(delayedEvent.getDelayedOutputs());
-          } else {
-            // submit as a job in order to do execute the operation in another thread.
-            dsExecutor.onNext(new DefaultExecutorTask<>(downstreamOp, delayedEvent.getDelayedOutputs()));
-          }
-        }
+        forwardOutputs(delayedEvent.getDelayedOutputs());
       });
   }
 

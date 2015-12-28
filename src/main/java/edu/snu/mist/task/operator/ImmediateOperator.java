@@ -16,8 +16,6 @@
 package edu.snu.mist.task.operator;
 
 import com.google.common.collect.ImmutableList;
-import edu.snu.mist.task.executor.MistExecutor;
-import edu.snu.mist.task.executor.impl.DefaultExecutorTask;
 import edu.snu.mist.task.operator.operation.immediate.ImmediateOperation;
 import org.apache.reef.wake.Identifier;
 
@@ -59,15 +57,6 @@ public final class ImmediateOperator<I, O> extends BaseOperator<I, O> {
   public void onNext(final ImmutableList<I> inputs) {
     final ImmutableList<O> outputs = operation.compute(inputs);
     LOG.log(Level.FINE, "{0} computes {1} to {2}", new Object[] {identifier, inputs, outputs});
-    for (final Operator<O, ?> downstreamOp : downstreamOperators) {
-      final MistExecutor dsExecutor = downstreamOp.getExecutor();
-      if (dsExecutor.equals(executor)) {
-        // just do function call instead of context switching.
-        downstreamOp.onNext(outputs);
-      } else {
-        // submit as a job in order to do execute the operation in another thread.
-        dsExecutor.onNext(new DefaultExecutorTask<>(downstreamOp, outputs));
-      }
-    }
+    forwardOutputs(outputs);
   }
 }

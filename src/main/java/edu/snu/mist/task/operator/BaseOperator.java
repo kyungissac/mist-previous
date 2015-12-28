@@ -15,7 +15,9 @@
  */
 package edu.snu.mist.task.operator;
 
+import com.google.common.collect.ImmutableList;
 import edu.snu.mist.task.executor.MistExecutor;
+import edu.snu.mist.task.executor.impl.DefaultExecutorTask;
 import org.apache.reef.wake.Identifier;
 
 import java.util.LinkedList;
@@ -80,5 +82,22 @@ public abstract class BaseOperator<I, O> implements Operator<I, O> {
   @Override
   public List<Operator<O, ?>> getDownstreamOperators() {
     return downstreamOperators;
+  }
+
+  /**
+   * Forward outputs to downstream operators.
+   * @param outputs outputs
+   */
+  protected void forwardOutputs(final ImmutableList<O> outputs) {
+    for (final Operator<O, ?> downstreamOp : downstreamOperators) {
+      final MistExecutor dsExecutor = downstreamOp.getExecutor();
+      if (dsExecutor.equals(executor)) {
+        // just do function call instead of context switching.
+        downstreamOp.onNext(outputs);
+      } else {
+        // submit as a job in order to do execute the operation in another thread.
+        dsExecutor.onNext(new DefaultExecutorTask<>(downstreamOp, outputs));
+      }
+    }
   }
 }
