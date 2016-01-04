@@ -54,6 +54,7 @@ public final class WordAggregatorTask implements Task {
   private final IdentifierFactory idFac;
   private final NetworkConnectionService ncs;
   private final Identifier connId;
+  private long startTime;
 
   @NamedParameter
   public static class ReceiverName implements Name<String> {
@@ -80,15 +81,18 @@ public final class WordAggregatorTask implements Task {
       final Iterator<String> iter = message.getData().iterator();
       while(iter.hasNext()) {
         count++;
-        String sentence = iter.next();
+        String[] msg = iter.next().split(":");
+        String sentence = msg[1];
         String[] words = splitter(sentence);
         for(String word : words) {
           counter(word);
         }
-        System.out.println(receiverName + "|Count = " + count);
+        LOG.log(Level.INFO, receiverName + "|Count =" + count);
         for(Map.Entry<String, Integer> item : counts.entrySet()) {
-          System.out.println(receiverName + "|Word: " + item.getKey() + ", Count: " + item.getValue());
+          LOG.log(Level.INFO, receiverName + "|Word: "+ item.getKey() + ", Count: " + item.getValue());
         }
+        long currentTime = System.currentTimeMillis();
+        System.out.println((currentTime - startTime)+"\t"+(currentTime-Long.parseLong(msg[0])));
       }
     }
   }
@@ -110,6 +114,7 @@ public final class WordAggregatorTask implements Task {
 
   @Override
   public byte[] call(final byte[] memento) {
+    startTime = System.currentTimeMillis();
     String senderName = "sender";
     final Identifier receiverId = idFac.getNewInstance(senderName);
     ConnectionFactory<String> connFac = ncs.getConnectionFactory(connId);
@@ -125,7 +130,7 @@ public final class WordAggregatorTask implements Task {
     try {
       Object obj = new Object();
       synchronized (obj) {
-          obj.wait();
+          obj.wait(500*1000);
       }
     } catch (InterruptedException e2) {
 	e2.printStackTrace(); 
