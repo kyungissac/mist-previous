@@ -54,6 +54,8 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
    */
   private final ConcurrentMap<String, PhysicalPlan<OperatorChain>> physicalPlanMap;
 
+  private final QueryManager queryManager;
+
   /**
    * Default query submitter in MistTask.
    * @param operatorChainer the converter which chains operators and makes OperatorChains
@@ -67,7 +69,9 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
                                     final OperatorChainAllocator chainAllocator,
                                     final PhysicalPlanGenerator physicalPlanGenerator,
                                     final StringIdentifierFactory idfactory,
+                                    final QueryManager queryManager,
                                     @Parameter(NumSubmitterThreads.class) final int numThreads) {
+    this.queryManager = queryManager;
     this.physicalPlanMap = new ConcurrentHashMap<>();
     this.tpStage = new ThreadPoolStage<>((tuple) -> {
       // 1) Converts the logical plan to the physical plan
@@ -83,6 +87,10 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
       chainAllocator.allocate(chainedOperators);
 
       // 4) Sets output emitters and 5) starts to receive input data stream from the source
+      // Save query info
+      queryManager.createQueryInfo(tuple.getKey(), chainedPlan);
+
+      // 5) Sets output emitters and 6) starts to receive input data stream from the source
       start(chainedPlan);
     }, numThreads);
   }
@@ -119,10 +127,9 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
     }
 
     for (final SourceGenerator src : chainPhysicalPlan.getSourceMap().keySet()) {
-      final Set<OperatorChain> nextOps = chainPhysicalPlan.getSourceMap().get(src);
       // Sets SourceOutputEmitter to the sources
-      src.setOutputEmitter(new SourceOutputEmitter<>(nextOps));
-      // 5) starts to receive input data stream from the source
+      src.setOutputEmitter(queryManager);
+      // 6) starts to receive input data stream from the source
       src.start();
     }
   }

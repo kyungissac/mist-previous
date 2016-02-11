@@ -15,7 +15,9 @@
  */
 package edu.snu.mist.task.sources;
 
+import edu.snu.mist.task.SourceInput;
 import edu.snu.mist.task.common.OutputEmitter;
+import org.apache.reef.wake.Identifier;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +34,7 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
   /**
    * An output emitter.
    */
-  protected OutputEmitter<I> outputEmitter;
+  protected OutputEmitter<SourceInput<I>> outputEmitter;
 
   /**
    * A flag for close.
@@ -55,12 +57,23 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
    */
   private final long sleepTime;
 
-  public BaseSourceGenerator(final long sleepTime) {
+  /**
+   * Identifier of SourceGenerator.
+   */
+  private final Identifier identifier;
+
+  private final String queryId;
+
+  public BaseSourceGenerator(final long sleepTime,
+                             final String queryId,
+                             final Identifier identifier) {
     // TODO[MIST-152]: Threads of SourceGenerator should be managed judiciously.
     this.executorService = Executors.newSingleThreadExecutor();
     this.closed = new AtomicBoolean(false);
     this.started = new AtomicBoolean(false);
     this.sleepTime = sleepTime;
+    this.queryId = queryId;
+    this.identifier = identifier;
   }
 
   @Override
@@ -78,7 +91,7 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
             if (input == null) {
               Thread.sleep(sleepTime);
             } else {
-              outputEmitter.emit(input);
+              outputEmitter.emit(new SourceInput<>(queryId, this, input));
             }
           } catch (final IOException e) {
             e.printStackTrace();
@@ -115,7 +128,12 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
   }
 
   @Override
-  public void setOutputEmitter(final OutputEmitter<I> emitter) {
+  public Identifier getIdentifier() {
+    return identifier;
+  }
+
+  @Override
+  public void setOutputEmitter(final OutputEmitter<SourceInput<I>> emitter) {
     this.outputEmitter = emitter;
   }
 }

@@ -20,6 +20,8 @@ import edu.snu.mist.task.common.OutputEmittable;
 import edu.snu.mist.task.executor.MistExecutor;
 import edu.snu.mist.task.operators.Operator;
 
+import java.util.List;
+
 /**
  * This interface chains operators as a list and executes them in order
  * from the first to the last operator.
@@ -65,4 +67,6 @@ public interface OperatorChain extends InputHandler, OutputEmittable {
    * @return executor an executor
    */
   MistExecutor getExecutor();
+
+  List<Operator> getOperators();
 }
