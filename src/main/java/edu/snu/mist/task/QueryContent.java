@@ -24,12 +24,11 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-public interface QueryInfo {
+public interface QueryContent {
 
   public enum QueryStatus {
     INACTIVE,
-    PARTIALLY_READY,
-    READY,
+    PARTIALLY_ACTIVE,
     ACTIVE
   }
 

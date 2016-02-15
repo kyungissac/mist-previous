@@ -127,7 +127,7 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
     }
 
     for (final SourceGenerator src : chainPhysicalPlan.getSourceMap().keySet()) {
-      // Sets SourceOutputEmitter to the sources
+      // Sets QueryManager to the sources
       src.setOutputEmitter(queryManager);
       // 6) starts to receive input data stream from the source
       src.start();

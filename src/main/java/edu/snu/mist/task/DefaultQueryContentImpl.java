@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
-final class DefaultQueryInfoImpl implements QueryInfo {
+final class DefaultQueryContentImpl implements QueryContent {
 
   private final AtomicReference<QueryStatus> status;
 
@@ -43,11 +43,11 @@ final class DefaultQueryInfoImpl implements QueryInfo {
 
   private final Queue<Object> queue;
 
-  DefaultQueryInfoImpl(final String queryId,
-                       final Map<SourceGenerator, Set<OperatorChain>> sourceMap,
-                       final DAG<OperatorChain> operatorChains,
-                       final Map<OperatorChain, Set<Sink>> sinkMap) {
-    this.status = new AtomicReference<>(QueryStatus.READY);
+  DefaultQueryContentImpl(final String queryId,
+                          final Map<SourceGenerator, Set<OperatorChain>> sourceMap,
+                          final DAG<OperatorChain> operatorChains,
+                          final Map<OperatorChain, Set<Sink>> sinkMap) {
+    this.status = new AtomicReference<>(QueryStatus.ACTIVE);
     this.queryId = queryId;
     this.sources = sourceMap;
     this.operators = operatorChains;

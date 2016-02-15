@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task;
-
-import edu.snu.mist.task.common.OutputEmitter;
-
-public interface QueryManager extends AutoCloseable, OutputEmitter<SourceInput> {
-  public QueryContent createQueryInfo(String queryId, PhysicalPlan<OperatorChain> physicalPlan);
-
-  public void deleteQueryInfo(String queryId);
-}
+/**
+ * This package contains QueryStore related interfaces and implementation.
+ */
+package edu.snu.mist.task.querystore;

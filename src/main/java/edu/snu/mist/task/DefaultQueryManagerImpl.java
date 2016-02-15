@@ -17,7 +17,8 @@
 package edu.snu.mist.task;
 
 import edu.snu.mist.task.executor.MistExecutor;
-
+import edu.snu.mist.task.querystore.QueryStore;
+import org.apache.reef.wake.EventHandler;
 import javax.inject.Inject;
 import java.util.Queue;
 import java.util.Set;
@@ -26,25 +27,33 @@ import java.util.concurrent.ConcurrentMap;
 
 public final class DefaultQueryManagerImpl implements QueryManager {
 
-  private final ConcurrentMap<String, QueryInfo> queryInfoMap;
+  private final ConcurrentMap<String, QueryContent> queryInfoMap;
+
+  private final QueryStore queryStore;
+
+  private final EventHandler<String> deleteCallback;
 
   @Inject
-  private DefaultQueryManagerImpl() {
+  private DefaultQueryManagerImpl(final QueryStore queryStore) {
     this.queryInfoMap = new ConcurrentHashMap<>();
+    this.queryStore = queryStore;
+    this.deleteCallback = deletedId -> {};
   }
 
   @Override
-  public QueryInfo createQueryInfo(final String queryId,
-                                   final PhysicalPlan<OperatorChain> physicalPlan) {
-    final QueryInfo queryInfo = new DefaultQueryInfoImpl(queryId,
+  public QueryContent createQueryContent(final String queryId,
+                                         final PhysicalPlan<OperatorChain> physicalPlan) {
+    final QueryContent queryContent = new DefaultQueryContentImpl(queryId,
         physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap());
-    queryInfoMap.put(queryId, queryInfo);
-    return queryInfo;
+    queryInfoMap.put(queryId, queryContent);
+    // TODO[MIST-#]: Deserialize physical plan and store query info and state to QueryStore.
+    return queryContent;
   }
 
   @Override
   public void deleteQueryInfo(final String queryId) {
     queryInfoMap.remove(queryId);
+    queryStore.deleteQuery(queryId, deleteCallback);
   }
 
   @Override
@@ -52,31 +61,54 @@ public final class DefaultQueryManagerImpl implements QueryManager {
 
   }
 
+  private void forwardInput(final Set<OperatorChain> nextOperators, final Object input) {
+    for (final OperatorChain nextOp : nextOperators) {
+      final MistExecutor executor = nextOp.getExecutor();
+      final OperatorChainJob operatorChainJob = new DefaultOperatorChainJob(nextOp, input);
+      // Always submits a job to the MistExecutor when inputs are received.
+      executor.submit(operatorChainJob);
+    }
+  }
+
   @Override
   public void emit(final SourceInput sourceInput) {
-    final QueryInfo queryInfo = queryInfoMap.get(sourceInput.getQueryId());
-    final Queue queue = queryInfo.getQueue();
+    final QueryContent queryContent = queryInfoMap.get(sourceInput.getQueryId());
+    final Queue queue = queryContent.getQueue();
     final Object input = sourceInput.getInput();
-    if (queryInfo.getQueryStatus() == QueryInfo.QueryStatus.ACTIVE) {
-      final Set<OperatorChain> nextOps = queryInfo.getSourceMap().get(sourceInput.getSrc());
-      while (!queue.isEmpty()) {
-        final Object prevInput = queue.poll();
-        for (final OperatorChain nextOp : nextOps) {
-          final MistExecutor executor = nextOp.getExecutor();
-          final OperatorChainJob operatorChainJob = new DefaultOperatorChainJob(nextOp, prevInput);
-          // Always submits a job to the MistExecutor when inputs are received.
-          executor.submit(operatorChainJob);
-        }
-      }
+    final Set<OperatorChain> nextOps = queryContent.getSourceMap().get(sourceInput.getSrc());
 
-      for (final OperatorChain nextOp : nextOps) {
-        final MistExecutor executor = nextOp.getExecutor();
-        final OperatorChainJob operatorChainJob = new DefaultOperatorChainJob(nextOp, input);
-        // Always submits a job to the MistExecutor when inputs are received.
-        executor.submit(operatorChainJob);
-      }
-    } else {
-      queue.add(input);
+    switch (queryContent.getQueryStatus()) {
+      case ACTIVE:
+        while (queue.isEmpty()) {
+          // if query is active but queue is not empty, wait until the queue becomes empty.
+          synchronized (queue) {
+            try {
+              queue.wait();
+            } catch (final InterruptedException e) {
+              e.printStackTrace();
+            }
+          }
+        }
+        forwardInput(nextOps, input);
+        break;
+      case PARTIALLY_ACTIVE:
+        // Load states of StatefulOperators.
+        // After loading the states, it should set the query status to ACTIVE
+        // and forwards the inputs in the queue to next operators.
+        queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+        // TODO[MIST-#]: Load states of a query.
+        queue.add(input);
+        break;
+      case INACTIVE:
+        // Load states and info of the query.
+        // After loading the states and info, it should set the query status to ACTIVE
+        // and forwards the inputs in the queue to next operators.
+        queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+        // TODO[MIST-#]: Load info of a query.
+        queue.add(input);
+        break;
+      default:
+        throw new RuntimeException("Invalid query status");
     }
   }
 }
