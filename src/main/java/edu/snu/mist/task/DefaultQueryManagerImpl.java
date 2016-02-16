@@ -17,15 +17,18 @@
 package edu.snu.mist.task;
 
 import edu.snu.mist.task.executor.MistExecutor;
+import edu.snu.mist.task.parameters.GracePeriod;
 import edu.snu.mist.task.querystore.QueryStore;
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EventHandler;
+
 import javax.inject.Inject;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
-public final class DefaultQueryManagerImpl implements QueryManager {
+final class DefaultQueryManagerImpl implements QueryManager {
 
   private final ConcurrentMap<String, QueryContent> queryInfoMap;
 
@@ -33,11 +36,27 @@ public final class DefaultQueryManagerImpl implements QueryManager {
 
   private final EventHandler<String> deleteCallback;
 
+  private final AtomicLong lastCheckpoint;
+
+  private final long gracePeriod;
+
+  private final ScheduledExecutorService scheduledExecutorService;
   @Inject
-  private DefaultQueryManagerImpl(final QueryStore queryStore) {
+  private DefaultQueryManagerImpl(final QueryStore queryStore,
+                                  @Parameter(GracePeriod.class) final long gracePeriod) {
     this.queryInfoMap = new ConcurrentHashMap<>();
     this.queryStore = queryStore;
     this.deleteCallback = deletedId -> {};
+    this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+      @Override
+      public void run() {
+        // checkpoint and unload states/info from memory.
+
+      }
+    }, gracePeriod, gracePeriod, TimeUnit.MILLISECONDS);
+    this.lastCheckpoint = new AtomicLong(System.currentTimeMillis());
+    this.gracePeriod = gracePeriod;
   }
 
   @Override

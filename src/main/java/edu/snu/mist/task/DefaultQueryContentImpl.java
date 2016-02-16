@@ -87,29 +87,12 @@ final class DefaultQueryContentImpl implements QueryContent {
 
   @Override
   public void setQueryStatus(QueryStatus queryStatus) {
-    if (compatibleStatus(queryStatus)) {
-      status.compareAndSet(status.get(), queryStatus);
-    } else {
-      // warning
-    }
+    status.compareAndSet(status.get(), queryStatus);
   }
 
   @Override
   public Queue getQueue() {
     return queue;
-  }
-
-  private boolean compatibleStatus(final QueryStatus queryStatus) {
-    if (status.get() == QueryStatus.ACTIVE && queryStatus == QueryStatus.READY ||
-        status.get() == QueryStatus.READY && queryStatus == QueryStatus.ACTIVE ||
-        status.get() == QueryStatus.PARTIALLY_READY && queryStatus == QueryStatus.READY ||
-        status.get() == QueryStatus.READY && queryStatus == QueryStatus.PARTIALLY_READY ||
-        status.get() == QueryStatus.INACTIVE && queryStatus == QueryStatus.PARTIALLY_READY ||
-        status.get() == QueryStatus.PARTIALLY_READY && queryStatus == QueryStatus.INACTIVE) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   @Override

@@ -22,11 +22,15 @@ import javax.inject.Inject;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * This is a basic query store which stores query info/states into hashmap.
+ */
 public final class MemoryQueryStore implements QueryStore {
 
-  final ConcurrentMap<String, byte[]> stateMap;
 
-  final ConcurrentMap<String, byte[]> infoMap;
+  private final ConcurrentMap<String, byte[]> stateMap;
+
+  private final ConcurrentMap<String, byte[]> infoMap;
 
   @Inject
   private MemoryQueryStore() {

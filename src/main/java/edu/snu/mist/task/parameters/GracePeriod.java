@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task;
 
-import edu.snu.mist.task.common.OutputEmitter;
+package edu.snu.mist.task.parameters;
 
-public interface QueryManager extends AutoCloseable, OutputEmitter<SourceInput> {
-  public QueryContent createQueryContent(String queryId, PhysicalPlan<OperatorChain> physicalPlan);
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
-  public void deleteQueryInfo(String queryId);
+@NamedParameter(doc = "The grace period of checkpointing (ms)", default_value = "5000")
+public final class GracePeriod implements Name<Long> {
 }
