@@ -15,8 +15,10 @@
  */
 package edu.snu.mist.task.sources;
 
+import edu.snu.mist.common.parameters.QueryId;
 import edu.snu.mist.task.common.parameters.SocketServerIp;
 import edu.snu.mist.task.common.parameters.SocketServerPort;
+import edu.snu.mist.task.sources.parameters.SourceId;
 import junit.framework.Assert;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
@@ -97,6 +99,8 @@ public final class SocketSourceGeneratorTest {
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
     jcb.bindNamedParameter(SocketServerIp.class, serverIpAddress);
     jcb.bindNamedParameter(SocketServerPort.class,  Integer.toString(port));
+    jcb.bindNamedParameter(SourceId.class, "testTextSocketStreamGenerator");
+    jcb.bindNamedParameter(QueryId.class, "testQuery");
     jcb.bindImplementation(SourceGenerator.class, TextSocketStreamGenerator.class);
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     try (final SourceGenerator<String> sourceGenerator = injector.getInstance(SourceGenerator.class)) {

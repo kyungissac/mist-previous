@@ -16,20 +16,20 @@
 package edu.snu.mist.task;
 
 import edu.snu.mist.formats.avro.AvroPhysicalPlan;
-import edu.snu.mist.task.operators.Operator;
+import edu.snu.mist.formats.avro.LogicalPlan;
+import org.apache.reef.io.Tuple;
 import org.apache.reef.tang.annotations.DefaultImplementation;
-import org.apache.reef.tang.exceptions.InjectionException;
 
 /**
- * This interface is for generating physical plan from avro physical plan.
- * This creates actual instances from avro physical plan.
+ * This interface is for generating avro physical plan from logical plan.
+ * This determines actual instance type of objects and parallelism.
  */
-@DefaultImplementation(DefaultPhysicalPlanGeneratorImpl.class)
-public interface PhysicalPlanGenerator {
+@DefaultImplementation(DefaultAvroPhysicalPlanGeneratorImpl.class)
+public interface AvroPhysicalPlanGenerator {
   /**
-   * Generates the physical plan by instantiating physical objects.
-   * @param avroPhysicalPlan the avro physical plan
-   * @return physical plan
+   * Generates the avro physical plan by deserializing the logical plan.
+   * @param queryIdAndLogicalPlan the tuple of queryId and logical plan
+   * @return avro physical plan
    */
-  PhysicalPlan<Operator> generate(AvroPhysicalPlan avroPhysicalPlan) throws InjectionException;
+  AvroPhysicalPlan generate(Tuple<String, LogicalPlan> queryIdAndLogicalPlan);
 }

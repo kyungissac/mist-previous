@@ -17,6 +17,7 @@ package edu.snu.mist.task;
 
 import edu.snu.mist.common.DAG;
 import edu.snu.mist.common.GraphUtils;
+import edu.snu.mist.formats.avro.AvroPhysicalPlan;
 import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.operators.Operator;
 import edu.snu.mist.task.parameters.NumSubmitterThreads;
@@ -62,22 +63,25 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
    * Default query submitter in MistTask.
    * @param operatorChainer the converter which chains operators and makes OperatorChains
    * @param chainAllocator the allocator which allocates a OperatorChain to a MistExecutor
-   * @param physicalPlanGenerator the physical plan generator which generates physical plan from logical paln
+   * @param avroPhysicalPlanGenerator the avro physical plan generator determining actual instance type and parallelism
+   * @param physicalPlanGenerator the physical plan generator instantiating actual instances
    * @param idfactory identifier factory
    * @param numThreads the number of threads for the query submitter
    */
   @Inject
   private DefaultQuerySubmitterImpl(final OperatorChainer operatorChainer,
                                     final OperatorChainAllocator chainAllocator,
+                                    final AvroPhysicalPlanGenerator avroPhysicalPlanGenerator,
                                     final PhysicalPlanGenerator physicalPlanGenerator,
                                     final StringIdentifierFactory idfactory,
                                     @Parameter(NumSubmitterThreads.class) final int numThreads) {
     this.physicalPlanMap = new ConcurrentHashMap<>();
     this.tpStage = new ThreadPoolStage<>((tuple) -> {
+      final AvroPhysicalPlan avroPhysicalPlanlPlan = avroPhysicalPlanGenerator.generate(tuple);
       final PhysicalPlan<Operator> physicalPlan;
       try {
-        // 1) Converts the logical plan to the physical plan
-        physicalPlan = physicalPlanGenerator.generate(tuple);
+        // 1) Converts the avro physical plan to the actual elements
+        physicalPlan = physicalPlanGenerator.generate(avroPhysicalPlanlPlan);
       } catch (final InjectionException e) {
         LOG.log(Level.INFO, "Injection Exception occurred during de-serializing LogicalPlans!");
         return;

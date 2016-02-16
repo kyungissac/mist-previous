@@ -16,6 +16,7 @@
 package edu.snu.mist.task.sources;
 
 import edu.snu.mist.task.common.OutputEmitter;
+import org.apache.reef.wake.Identifier;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -55,12 +56,23 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
    */
   private final long sleepTime;
 
-  public BaseSourceGenerator(final long sleepTime) {
+  /**
+   * Identifier of SourceGenerator.
+   */
+  private final Identifier identifier;
+
+  private final String queryId;
+
+  public BaseSourceGenerator(final long sleepTime,
+                             final String queryId,
+                             final Identifier identifier) {
     // TODO[MIST-152]: Threads of SourceGenerator should be managed judiciously.
     this.executorService = Executors.newSingleThreadExecutor();
     this.closed = new AtomicBoolean(false);
     this.started = new AtomicBoolean(false);
     this.sleepTime = sleepTime;
+    this.queryId = queryId;
+    this.identifier = identifier;
   }
 
   @Override
@@ -112,6 +124,11 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
       releaseResources();
       executorService.shutdown();
     }
+  }
+
+  @Override
+  public Identifier getIdentifier() {
+    return identifier;
   }
 
   @Override

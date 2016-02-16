@@ -19,6 +19,7 @@ import edu.snu.mist.api.types.Tuple2;
 import edu.snu.mist.common.AdjacentListDAG;
 import edu.snu.mist.common.DAG;
 import edu.snu.mist.common.parameters.QueryId;
+import edu.snu.mist.formats.avro.AvroPhysicalPlan;
 import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.operators.*;
 import edu.snu.mist.task.operators.parameters.KeyIndex;
@@ -30,10 +31,12 @@ import edu.snu.mist.task.sources.BaseSourceGenerator;
 import edu.snu.mist.task.sources.SourceGenerator;
 import junit.framework.Assert;
 import org.apache.reef.io.Tuple;
+import org.apache.reef.io.network.util.StringIdentifierFactory;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
+import org.apache.reef.wake.Identifier;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -115,7 +118,8 @@ public final class QuerySubmitterTest {
     final CountDownLatch countDownAllOutputs = new CountDownLatch(intermediateResult.size() * 2);
 
     // Create source
-    final SourceGenerator src = new TestSourceGenerator(inputs);
+    final StringIdentifierFactory identifierFactory = new StringIdentifierFactory();
+    final SourceGenerator src = new TestSourceGenerator(inputs, identifierFactory.getNewInstance("1"));
 
     // Create operators
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
@@ -170,11 +174,17 @@ public final class QuerySubmitterTest {
     // Fake logical plan of QuerySubmitter
     final Tuple<String, LogicalPlan> tuple = new Tuple<>(queryId, new LogicalPlan());
 
+    // Create a fake AvroPhysicalPlanGenerator. It returns empty plan
+    final AvroPhysicalPlan avroPhysicalPlan = new AvroPhysicalPlan();
+    final AvroPhysicalPlanGenerator avroPhysicalPlanGenerator = mock(AvroPhysicalPlanGenerator.class);
+    when(avroPhysicalPlanGenerator.generate(tuple)).thenReturn(avroPhysicalPlan);
+
     // Create mock PhysicalPlanGenerator. It returns the above physical plan
     final PhysicalPlanGenerator physicalPlanGenerator = mock(PhysicalPlanGenerator.class);
-    when(physicalPlanGenerator.generate(tuple)).thenReturn(physicalPlan);
+    when(physicalPlanGenerator.generate(avroPhysicalPlan)).thenReturn(physicalPlan);
 
     // Create QuerySubmitter
+    injector.bindVolatileInstance(AvroPhysicalPlanGenerator.class, avroPhysicalPlanGenerator);
     injector.bindVolatileInstance(PhysicalPlanGenerator.class, physicalPlanGenerator);
     injector.bindVolatileParameter(NumSubmitterThreads.class, 1);
 
@@ -257,8 +267,9 @@ public final class QuerySubmitterTest {
    */
   final class TestSourceGenerator extends BaseSourceGenerator<String> {
     private final Iterator<String> inputs;
-    TestSourceGenerator(final List<String> inputs) {
-      super(1000);
+    TestSourceGenerator(final List<String> inputs,
+                        final Identifier identifier) {
+      super(1000, "testQuery", identifier);
       this.inputs = inputs.iterator();
     }
 

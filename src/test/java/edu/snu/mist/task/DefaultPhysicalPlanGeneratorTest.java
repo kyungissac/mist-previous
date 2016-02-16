@@ -23,6 +23,7 @@ import edu.snu.mist.api.sources.TextSocketSourceStream;
 import edu.snu.mist.api.sources.parameters.TextSocketSourceParameters;
 import edu.snu.mist.api.types.Tuple2;
 import edu.snu.mist.common.DAG;
+import edu.snu.mist.formats.avro.AvroPhysicalPlan;
 import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.operators.*;
 import edu.snu.mist.task.sinks.Sink;
@@ -30,6 +31,7 @@ import edu.snu.mist.task.sinks.TextSocketSink;
 import edu.snu.mist.task.sources.SourceGenerator;
 import edu.snu.mist.task.sources.TextSocketStreamGenerator;
 import org.apache.reef.io.Tuple;
+import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.junit.After;
@@ -86,13 +88,15 @@ public final class DefaultPhysicalPlanGeneratorTest {
         .textSocketOutput(APITestParameters.LOCAL_TEXT_SOCKET_SINK_CONF)
         .getQuery();
 
-    final MISTQuerySerializer querySerializer = Tang.Factory.getTang().newInjector()
-        .getInstance(MISTQuerySerializer.class);
+    final Injector injector = Tang.Factory.getTang().newInjector();
+    final MISTQuerySerializer querySerializer = injector.getInstance(MISTQuerySerializer.class);
     final LogicalPlan logicalPlan = querySerializer.queryToLogicalPlan(query);
+    final AvroPhysicalPlanGenerator avroPhysicalPlanGenerator =
+        injector.getInstance(AvroPhysicalPlanGenerator.class);
     final PhysicalPlanGenerator ppg = Tang.Factory.getTang().newInjector().getInstance(PhysicalPlanGenerator.class);
     final Tuple<String, LogicalPlan> tuple = new Tuple<>("query-test", logicalPlan);
-    final PhysicalPlan<Operator> physicalPlan = ppg.generate(tuple);
-
+    final AvroPhysicalPlan avroPhysicalPlan = avroPhysicalPlanGenerator.generate(tuple);
+    final PhysicalPlan<Operator> physicalPlan = ppg.generate(avroPhysicalPlan);
     final Map<SourceGenerator, Set<Operator>> sourceMap = physicalPlan.getSourceMap();
     Assert.assertEquals(1, sourceMap.keySet().size());
     final SourceGenerator source = sourceMap.keySet().iterator().next();

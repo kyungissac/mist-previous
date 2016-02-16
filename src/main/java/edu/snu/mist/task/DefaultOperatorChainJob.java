@@ -17,8 +17,7 @@ package edu.snu.mist.task;
 
 /**
  * This class is a default implementation of OperatorChainJob.
- */
-final class DefaultOperatorChainJob implements OperatorChainJob {
+ */final class DefaultOperatorChainJob implements OperatorChainJob {
 
   /**
    * A OperatorChain for computing inputs.

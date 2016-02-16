@@ -16,6 +16,7 @@
 package edu.snu.mist.task.sources;
 
 import edu.snu.mist.task.common.OutputEmittable;
+import org.apache.reef.wake.Identifier;
 
 /**
  * SourceGenerator generates input stream.
@@ -29,4 +30,9 @@ public interface SourceGenerator<I> extends OutputEmittable<I>, AutoCloseable {
    * Starts to generate source stream and forwards inputs to the OutputEmitter.
    */
   void start();
+
+  /**
+   * Identifier of source generator.
+   */
+  Identifier getIdentifier();
 }
