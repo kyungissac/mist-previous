@@ -13,19 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.querymanager;
-
-import edu.snu.mist.formats.avro.LogicalPlan;
-import edu.snu.mist.task.OperatorChain;
-import edu.snu.mist.task.PhysicalPlan;
-import edu.snu.mist.task.SourceInput;
-import edu.snu.mist.task.common.OutputEmitter;
-
-public interface QueryManager extends AutoCloseable, MemoryListener, OutputEmitter<SourceInput> {
-
-  void registerQuery(String queryId,
-                            PhysicalPlan<OperatorChain> physicalPlan,
-                            LogicalPlan serializedLogicalPlan);
-
-  void unregisterQuery(String queryId);
-}
+/**
+ * A package of utility classes.
+ */
+package edu.snu.mist.utils;

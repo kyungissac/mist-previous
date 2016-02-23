@@ -15,17 +15,10 @@
  */
 package edu.snu.mist.task.querymanager;
 
-import edu.snu.mist.formats.avro.LogicalPlan;
-import edu.snu.mist.task.OperatorChain;
-import edu.snu.mist.task.PhysicalPlan;
-import edu.snu.mist.task.SourceInput;
-import edu.snu.mist.task.common.OutputEmitter;
+import org.apache.reef.tang.annotations.DefaultImplementation;
 
-public interface QueryManager extends AutoCloseable, MemoryListener, OutputEmitter<SourceInput> {
+import javax.management.NotificationListener;
 
-  void registerQuery(String queryId,
-                            PhysicalPlan<OperatorChain> physicalPlan,
-                            LogicalPlan serializedLogicalPlan);
-
-  void unregisterQuery(String queryId);
+@DefaultImplementation(QueryManager.class)
+public interface MemoryListener extends NotificationListener {
 }

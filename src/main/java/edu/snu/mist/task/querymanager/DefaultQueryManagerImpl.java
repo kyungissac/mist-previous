@@ -17,23 +17,21 @@
 package edu.snu.mist.task.querymanager;
 
 import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.formats.avro.QueryState;
 import edu.snu.mist.task.*;
 import edu.snu.mist.task.executor.MistExecutor;
-import edu.snu.mist.task.parameters.GracePeriod;
+import edu.snu.mist.task.operators.StatefulOperator;
 import edu.snu.mist.task.querymanager.querystores.QueryStore;
-import org.apache.avro.io.*;
-import org.apache.avro.specific.SpecificDatumReader;
-import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.reef.tang.annotations.Parameter;
+import edu.snu.mist.utils.AvroSerializer;
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.reef.wake.EventHandler;
 
 import javax.inject.Inject;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
+import javax.management.Notification;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 final class DefaultQueryManagerImpl implements QueryManager {
 
@@ -43,27 +41,15 @@ final class DefaultQueryManagerImpl implements QueryManager {
 
   private final EventHandler<String> deleteCallback;
 
-  private final AtomicLong lastCheckpoint;
-
-  private final long gracePeriod;
-
-  private final ScheduledExecutorService scheduledExecutorService;
+  private final UnloadedQuerySelector unloadedQuerySelector;
 
   @Inject
   private DefaultQueryManagerImpl(final QueryStore queryStore,
-                                  @Parameter(GracePeriod.class) final long gracePeriod) {
+                                  final UnloadedQuerySelector unloadedQuerySelector) {
     this.queryInfoMap = new ConcurrentHashMap<>();
     this.queryStore = queryStore;
     this.deleteCallback = deletedId -> {};
-    this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-    scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-      @Override
-      public void run() {
-
-      }
-    }, gracePeriod, gracePeriod, TimeUnit.MILLISECONDS);
-    this.lastCheckpoint = new AtomicLong(System.currentTimeMillis());
-    this.gracePeriod = gracePeriod;
+    this.unloadedQuerySelector = unloadedQuerySelector;
   }
 
   @Override
@@ -71,33 +57,9 @@ final class DefaultQueryManagerImpl implements QueryManager {
                             final PhysicalPlan<OperatorChain> physicalPlan,
                             final LogicalPlan logicalPlan) {
     final QueryContent queryContent = new DefaultQueryContentImpl(queryId,
-        physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap(), logicalPlan);
+        physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap());
     queryInfoMap.put(queryId, queryContent);
-    queryStore.storeLogicalPlan(queryId, logicalPlanToString(logicalPlan), null);
-  }
-
-  private String logicalPlanToString(final LogicalPlan logicalPlan) {
-    final DatumWriter<LogicalPlan> datumWriter = new SpecificDatumWriter<>(LogicalPlan.class);
-    try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-      final JsonEncoder encoder = EncoderFactory.get().jsonEncoder(logicalPlan.getSchema(), out);
-      datumWriter.write(logicalPlan, encoder);
-      encoder.flush();
-      out.close();
-      return out.toString();
-    } catch (final IOException ex) {
-      throw new RuntimeException("Unable to serialize logicalPlan", ex);
-    }
-  }
-
-  private LogicalPlan logicalPlanFromString(final String serializedLogicalPlan) {
-    try {
-      final Decoder decoder =
-          DecoderFactory.get().jsonDecoder(LogicalPlan.getClassSchema(), serializedLogicalPlan);
-      final SpecificDatumReader<LogicalPlan> reader = new SpecificDatumReader<>(LogicalPlan.class);
-      return reader.read(null, decoder);
-    } catch (final IOException ex) {
-      throw new RuntimeException("Unable to deserialize logical plan", ex);
-    }
+    queryStore.storeLogicalPlan(queryId, AvroSerializer.avroToString(logicalPlan, LogicalPlan.class), null);
   }
 
   @Override
@@ -108,7 +70,6 @@ final class DefaultQueryManagerImpl implements QueryManager {
 
   @Override
   public void close() throws Exception {
-    scheduledExecutorService.shutdown();
   }
 
   private void forwardInput(final Set<OperatorChain> nextOperators, final Object input) {
@@ -129,7 +90,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
     final long currTime = System.currentTimeMillis();
     queryContent.setLatestActiveTime(currTime);
 
-    switch (queryContent.getQueryStatus()) {
+    switch (queryContent.getQueryStatus().get()) {
       case ACTIVE:
         if (!queue.isEmpty()) {
           // if query is active but queue is not empty, add the input to the queue.
@@ -145,7 +106,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
         // After loading the states, it should set the query status to ACTIVE
         // and forwards the inputs in the queue to next operators.
         queue.add(input);
-        queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+        //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
         // TODO[MIST-#]: Load states of a query.
         break;
       case INACTIVE:
@@ -153,11 +114,37 @@ final class DefaultQueryManagerImpl implements QueryManager {
         // After loading the states and info, it should set the query status to ACTIVE
         // and forwards the inputs in the queue to next operators.
         queue.add(input);
-        queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+        //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
         // TODO[MIST-#]: Load info of a query.
         break;
       default:
         throw new RuntimeException("Invalid query status");
+    }
+  }
+
+  @Override
+  public void handleNotification(final Notification notification, final Object handback) {
+    final List<QueryContent> queriesToBeUnloaded =
+        unloadedQuerySelector.selectUnloadedQueries(queryInfoMap);
+    // Serialize query states
+    for (final QueryContent queryContent : queriesToBeUnloaded) {
+      final Set<StatefulOperator> statefulOperators = queryContent.getStatefulOperators();
+      final QueryState.Builder stateBuilder = QueryState.newBuilder();
+      stateBuilder.setQueryId(queryContent.getQueryId());
+      final Map<CharSequence, ByteBuffer> stateMap = new HashMap<>();
+      for (final StatefulOperator statefulOperator : statefulOperators) {
+        stateMap.put(statefulOperator.getOperatorIdentifier().toString(),
+            ByteBuffer.wrap(SerializationUtils.serialize(statefulOperator.getState())));
+      }
+      stateBuilder.setOperatorStateMap(stateMap);
+      // store query state
+      queryStore.storeState(queryContent.getQueryId(),
+          AvroSerializer.avroToString(stateBuilder.build(), QueryState.class), null);
+      // unload query
+      queryContent.clearQueryInfo();
+      queryContent.getQueryStatus()
+          .compareAndSet(QueryContent.QueryStatus.UNLOADING,
+              QueryContent.QueryStatus.PARTIALLY_ACTIVE);
     }
   }
 }

@@ -78,6 +78,7 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
                                     @Parameter(NumSubmitterThreads.class) final int numThreads) {
     this.queryManager = queryManager;
     this.physicalPlanMap = new ConcurrentHashMap<>();
+
     this.tpStage = new ThreadPoolStage<>((tuple) -> {
       final PhysicalPlan<Operator> physicalPlan;
       try {
@@ -99,7 +100,7 @@ final class DefaultQuerySubmitterImpl implements QuerySubmitter {
 
       // 4) Sets output emitters and 5) starts to receive input data stream from the source
       // Save query info
-      queryManager.createQueryInfo(tuple.getKey(), chainedPlan);
+      queryManager.registerQuery(tuple.getKey(), chainedPlan, tuple.getValue());
 
       // 5) Sets output emitters and 6) starts to receive input data stream from the source
       start(chainedPlan);

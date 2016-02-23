@@ -54,7 +54,7 @@ public final class TextSocketStreamGenerator extends BaseSourceGenerator<String>
       @Parameter(DataFetchSleepTime.class) final long sleepTime,
       @Parameter(SourceId.class) final String sourceId,
       @Parameter(QueryId.class) final String queryId,
-      StringIdentifierFactory identifierFactory) throws IOException {
+      final StringIdentifierFactory identifierFactory) throws IOException {
     super(sleepTime, queryId, identifierFactory.getNewInstance(sourceId));
     this.socket = new Socket(serverIp, serverPort);
     this.bf = new BufferedReader(new InputStreamReader(socket.getInputStream()));

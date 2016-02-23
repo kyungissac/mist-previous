@@ -15,17 +15,9 @@
  */
 package edu.snu.mist.task.querymanager;
 
-import edu.snu.mist.formats.avro.LogicalPlan;
-import edu.snu.mist.task.OperatorChain;
-import edu.snu.mist.task.PhysicalPlan;
-import edu.snu.mist.task.SourceInput;
-import edu.snu.mist.task.common.OutputEmitter;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
-public interface QueryManager extends AutoCloseable, MemoryListener, OutputEmitter<SourceInput> {
-
-  void registerQuery(String queryId,
-                            PhysicalPlan<OperatorChain> physicalPlan,
-                            LogicalPlan serializedLogicalPlan);
-
-  void unregisterQuery(String queryId);
+public interface UnloadedQuerySelector {
+  List<QueryContent> selectUnloadedQueries(ConcurrentMap<String, QueryContent> queryMap);
 }

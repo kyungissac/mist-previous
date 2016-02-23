@@ -18,7 +18,6 @@ package edu.snu.mist.task.querymanager;
 import edu.snu.mist.api.StreamType;
 import edu.snu.mist.common.DAG;
 import edu.snu.mist.common.GraphUtils;
-import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.OperatorChain;
 import edu.snu.mist.task.operators.Operator;
 import edu.snu.mist.task.operators.StatefulOperator;
@@ -45,22 +44,18 @@ final class DefaultQueryContentImpl implements QueryContent {
 
   private final Queue<Object> queue;
 
-  private LogicalPlan serializedLogicalPlan;
-
   private long latestActiveTime;
 
   DefaultQueryContentImpl(final String queryId,
                           final Map<SourceGenerator, Set<OperatorChain>> sourceMap,
                           final DAG<OperatorChain> operatorChains,
-                          final Map<OperatorChain, Set<Sink>> sinkMap,
-                          final LogicalPlan serializedLogicalPlan) {
+                          final Map<OperatorChain, Set<Sink>> sinkMap) {
     this.status = new AtomicReference<>(QueryStatus.ACTIVE);
     this.queryId = queryId;
     this.sources = sourceMap;
     this.operators = operatorChains;
     this.sinks = sinkMap;
     this.queue = new LinkedBlockingQueue<>();
-    this.serializedLogicalPlan = serializedLogicalPlan;
     this.latestActiveTime = System.currentTimeMillis();
   }
 
@@ -100,13 +95,8 @@ final class DefaultQueryContentImpl implements QueryContent {
   }
 
   @Override
-  public QueryStatus getQueryStatus() {
-    return status.get();
-  }
-
-  @Override
-  public void setQueryStatus(QueryStatus queryStatus) {
-    status.compareAndSet(status.get(), queryStatus);
+  public AtomicReference<QueryStatus> getQueryStatus() {
+    return status;
   }
 
   @Override
@@ -139,15 +129,5 @@ final class DefaultQueryContentImpl implements QueryContent {
     } else {
       // warning
     }
-  }
-
-  @Override
-  public void setLogicalPlan(final LogicalPlan logicalPlan) {
-    serializedLogicalPlan = logicalPlan;
-  }
-
-  @Override
-  public LogicalPlan getLogicalPlan() {
-    return serializedLogicalPlan;
   }
 }

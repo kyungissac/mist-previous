@@ -15,17 +15,17 @@
  */
 package edu.snu.mist.task.querymanager;
 
-import edu.snu.mist.formats.avro.LogicalPlan;
-import edu.snu.mist.task.OperatorChain;
-import edu.snu.mist.task.PhysicalPlan;
-import edu.snu.mist.task.SourceInput;
-import edu.snu.mist.task.common.OutputEmitter;
+import java.util.Comparator;
 
-public interface QueryManager extends AutoCloseable, MemoryListener, OutputEmitter<SourceInput> {
-
-  void registerQuery(String queryId,
-                            PhysicalPlan<OperatorChain> physicalPlan,
-                            LogicalPlan serializedLogicalPlan);
-
-  void unregisterQuery(String queryId);
+public final class QueryContentComparator implements Comparator<QueryContent> {
+  @Override
+  public int compare(final QueryContent c1, final QueryContent c2) {
+    if (c1.getLatestActiveTime() - c2.getLatestActiveTime() > 0) {
+      return 1;
+    } else if (c1.getLatestActiveTime() - c2.getLatestActiveTime() < 0) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
 }

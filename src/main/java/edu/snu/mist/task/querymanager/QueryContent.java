@@ -16,7 +16,6 @@
 package edu.snu.mist.task.querymanager;
 
 import edu.snu.mist.common.DAG;
-import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.OperatorChain;
 import edu.snu.mist.task.operators.StatefulOperator;
 import edu.snu.mist.task.sinks.Sink;
@@ -25,38 +24,35 @@ import edu.snu.mist.task.sources.SourceGenerator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 public interface QueryContent {
 
   public enum QueryStatus {
     INACTIVE,
     PARTIALLY_ACTIVE,
-    ACTIVE
+    ACTIVE,
+    UNLOADING,
+    LOADING,
   }
 
-  public void setLatestActiveTime(long latestActiveTime);
+  void setLatestActiveTime(long latestActiveTime);
 
-  public long getLatestActiveTime();
+  long getLatestActiveTime();
 
-  public void setQueryInfo(Map<SourceGenerator, Set<OperatorChain>> sourceMap,
+  void setQueryInfo(Map<SourceGenerator, Set<OperatorChain>> sourceMap,
                            DAG<OperatorChain> operatorChains,
                            Map<OperatorChain, Set<Sink>> sinkMap);
 
-  public QueryStatus getQueryStatus();
+  AtomicReference<QueryStatus> getQueryStatus();
 
-  public void setQueryStatus(QueryStatus queryStatus);
+  Queue getQueue();
 
-  public Queue getQueue();
+  Set<StatefulOperator> getStatefulOperators();
 
-  public Set<StatefulOperator> getStatefulOperators();
+  String getQueryId();
 
-  public String getQueryId();
+  Map<SourceGenerator, Set<OperatorChain>> getSourceMap();
 
-  public Map<SourceGenerator, Set<OperatorChain>> getSourceMap();
-
-  public void clearQueryInfo();
-
-  public void setLogicalPlan(LogicalPlan logicalPlan);
-
-  public LogicalPlan getLogicalPlan();
+  void clearQueryInfo();
 }

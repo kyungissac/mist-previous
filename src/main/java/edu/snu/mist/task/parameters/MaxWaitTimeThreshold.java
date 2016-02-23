@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.querymanager;
+package edu.snu.mist.task.parameters;
 
-import edu.snu.mist.formats.avro.LogicalPlan;
-import edu.snu.mist.task.OperatorChain;
-import edu.snu.mist.task.PhysicalPlan;
-import edu.snu.mist.task.SourceInput;
-import edu.snu.mist.task.common.OutputEmitter;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
-public interface QueryManager extends AutoCloseable, MemoryListener, OutputEmitter<SourceInput> {
-
-  void registerQuery(String queryId,
-                            PhysicalPlan<OperatorChain> physicalPlan,
-                            LogicalPlan serializedLogicalPlan);
-
-  void unregisterQuery(String queryId);
+@NamedParameter(doc = "The maximum waiting time to receive input of a query (sec)", default_value = "60")
+public final class MaxWaitTimeThreshold implements Name<Integer> {
 }
