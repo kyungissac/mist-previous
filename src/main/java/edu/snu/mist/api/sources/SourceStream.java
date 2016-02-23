@@ -19,10 +19,15 @@ import edu.snu.mist.api.ContinuousStreamImpl;
 import edu.snu.mist.api.StreamType;
 import edu.snu.mist.api.sources.builder.SourceConfiguration;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Stream interface for streams created from various stream sources.
  */
 public abstract class SourceStream<T> extends ContinuousStreamImpl<T> {
+
+  private static final AtomicInteger sourceIndexGenerator = new AtomicInteger(0);
+
   /**
    * The value for source configuration.
    */
@@ -32,10 +37,17 @@ public abstract class SourceStream<T> extends ContinuousStreamImpl<T> {
    */
   private final StreamType.SourceType sourceType;
 
-  SourceStream(final StreamType.SourceType sourceType, final SourceConfiguration sourceConfiguration) {
+  /**
+   * The source index.
+   */
+  private final int sourceIndex;
+
+  SourceStream(final StreamType.SourceType sourceType,
+               final SourceConfiguration sourceConfiguration) {
     super(StreamType.ContinuousType.SOURCE);
     this.sourceType = sourceType;
     this.sourceConfiguration = sourceConfiguration;
+    this.sourceIndex = sourceIndexGenerator.getAndIncrement();
   }
 
   /**
@@ -50,5 +62,12 @@ public abstract class SourceStream<T> extends ContinuousStreamImpl<T> {
    */
   public SourceConfiguration getSourceConfiguration() {
     return this.sourceConfiguration;
+  }
+
+  /**
+   * @return The source index
+   */
+  public int getSourceIndex() {
+    return sourceIndex;
   }
 }
