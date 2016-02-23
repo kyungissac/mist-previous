@@ -28,46 +28,47 @@ import java.util.concurrent.ConcurrentMap;
 public final class MemoryQueryStore implements QueryStore {
 
 
-  private final ConcurrentMap<String, byte[]> stateMap;
+  private final ConcurrentMap<String, String> stateMap;
 
-  private final ConcurrentMap<String, byte[]> infoMap;
+  private final ConcurrentMap<String, String> logicalPlanMap;
 
   @Inject
   private MemoryQueryStore() {
     this.stateMap = new ConcurrentHashMap<>();
-    this.infoMap = new ConcurrentHashMap<>();
+    this.logicalPlanMap = new ConcurrentHashMap<>();
   }
-
 
   @Override
   public void storeState(final String queryId,
-                         final Tuple<String, byte[]> tuple,
-                         final EventHandler<Tuple<String, byte[]>> callback) {
-    stateMap.put(queryId, tuple.getValue());
-    callback.onNext(tuple);
+                         final String state,
+                         final EventHandler<Tuple<String, String>> callback) {
+    stateMap.put(queryId, state);
+    callback.onNext(new Tuple<>(queryId, state));
   }
 
   @Override
-  public void storeInfo(final String queryId,
-                        final Tuple<String, byte[]> tuple,
-                        final EventHandler<Tuple<String, byte[]>> callback) {
-    infoMap.put(queryId, tuple.getValue());
-    callback.onNext(tuple);
+  public void storeLogicalPlan(final String queryId,
+                               final String logicalPlan,
+                               final EventHandler<Tuple<String, String>> callback) {
+    logicalPlanMap.put(queryId, logicalPlan);
+    callback.onNext(new Tuple<>(queryId, logicalPlan));
   }
 
   @Override
-  public void getState(final String queryId, final EventHandler<byte[]> callback) {
-    callback.onNext(stateMap.get(queryId));
+  public void getState(final String queryId,
+                       final EventHandler<Tuple<String, String>> callback) {
+    callback.onNext(new Tuple<>(queryId, stateMap.get(queryId)));
   }
 
   @Override
-  public void getInfo(final String queryId, final EventHandler<byte[]> callback) {
-    callback.onNext(infoMap.get(queryId));
+  public void getInfo(final String queryId,
+                      final EventHandler<Tuple<String, String>> callback) {
+    callback.onNext(new Tuple<>(queryId, logicalPlanMap.get(queryId)));
   }
 
   @Override
   public void deleteQuery(final String queryId, final EventHandler<String> callback) {
-    infoMap.remove(queryId);
+    logicalPlanMap.remove(queryId);
     stateMap.remove(queryId);
     callback.onNext(queryId);
   }

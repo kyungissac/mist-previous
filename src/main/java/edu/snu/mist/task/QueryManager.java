@@ -15,10 +15,14 @@
  */
 package edu.snu.mist.task;
 
+import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.common.OutputEmitter;
 
 public interface QueryManager extends AutoCloseable, OutputEmitter<SourceInput> {
-  public QueryContent createQueryContent(String queryId, PhysicalPlan<OperatorChain> physicalPlan);
 
-  public void deleteQueryInfo(String queryId);
+  public void registerQuery(String queryId,
+                            PhysicalPlan<OperatorChain> physicalPlan,
+                            LogicalPlan serializedLogicalPlan);
+
+  public void unregisterQuery(String queryId);
 }

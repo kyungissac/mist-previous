@@ -16,6 +16,7 @@
 package edu.snu.mist.task;
 
 import edu.snu.mist.common.DAG;
+import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.operators.StatefulOperator;
 import edu.snu.mist.task.sinks.Sink;
 import edu.snu.mist.task.sources.SourceGenerator;
@@ -34,6 +35,8 @@ public interface QueryContent {
 
   public void setLatestActiveTime(long latestActiveTime);
 
+  public long getLatestActiveTime();
+
   public void setQueryInfo(Map<SourceGenerator, Set<OperatorChain>> sourceMap,
                            DAG<OperatorChain> operatorChains,
                            Map<OperatorChain, Set<Sink>> sinkMap);
@@ -51,4 +54,8 @@ public interface QueryContent {
   public Map<SourceGenerator, Set<OperatorChain>> getSourceMap();
 
   public void clearQueryInfo();
+
+  public void setLogicalPlan(LogicalPlan logicalPlan);
+
+  public LogicalPlan getLogicalPlan();
 }

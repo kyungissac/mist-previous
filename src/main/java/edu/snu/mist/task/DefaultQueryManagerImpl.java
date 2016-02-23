@@ -16,13 +16,19 @@
 
 package edu.snu.mist.task;
 
+import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.executor.MistExecutor;
 import edu.snu.mist.task.parameters.GracePeriod;
 import edu.snu.mist.task.querystore.QueryStore;
+import org.apache.avro.io.*;
+import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.wake.EventHandler;
 
 import javax.inject.Inject;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -61,17 +67,41 @@ final class DefaultQueryManagerImpl implements QueryManager {
   }
 
   @Override
-  public QueryContent createQueryContent(final String queryId,
-                                         final PhysicalPlan<OperatorChain> physicalPlan) {
+  public void registerQuery(final String queryId,
+                            final PhysicalPlan<OperatorChain> physicalPlan,
+                            final LogicalPlan logicalPlan) {
     final QueryContent queryContent = new DefaultQueryContentImpl(queryId,
-        physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap());
+        physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap(), logicalPlan);
     queryInfoMap.put(queryId, queryContent);
     // TODO[MIST-#]: Deserialize physical plan and store query info and state to QueryStore.
-    return queryContent;
+  }
+
+  private String logicalPlanToString(final LogicalPlan logicalPlan) {
+    final DatumWriter<LogicalPlan> datumWriter = new SpecificDatumWriter<>(LogicalPlan.class);
+    try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+      final JsonEncoder encoder = EncoderFactory.get().jsonEncoder(logicalPlan.getSchema(), out);
+      datumWriter.write(logicalPlan, encoder);
+      encoder.flush();
+      out.close();
+      return out.toString();
+    } catch (final IOException ex) {
+      throw new RuntimeException("Unable to serialize logicalPlan", ex);
+    }
+  }
+
+  private LogicalPlan logicalPlanFromString(final String serializedLogicalPlan) {
+    try {
+      final Decoder decoder =
+          DecoderFactory.get().jsonDecoder(LogicalPlan.getClassSchema(), serializedLogicalPlan);
+      final SpecificDatumReader<LogicalPlan> reader = new SpecificDatumReader<>(LogicalPlan.class);
+      return reader.read(null, decoder);
+    } catch (final IOException ex) {
+      throw new RuntimeException("Unable to deserialize logical plan", ex);
+    }
   }
 
   @Override
-  public void deleteQueryInfo(final String queryId) {
+  public void unregisterQuery(final String queryId) {
     queryInfoMap.remove(queryId);
     queryStore.deleteQuery(queryId, deleteCallback);
   }
