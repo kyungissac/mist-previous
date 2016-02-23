@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.parameters;
+package edu.snu.mist.task;
 
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
+import org.apache.reef.tang.annotations.DefaultImplementation;
 
-@NamedParameter(doc = "The number of mist executors", short_name = "num_executors")
-public final class NumExecutors implements Name<Integer> {
+/**
+ * This interface contains necessary methods for generating operator IDs.
+ */
+@DefaultImplementation(DefaultOperatorIdGeneratorImpl.class)
+public interface OperatorIdGenerator {
+
+  /**
+   * Generates operator Id.
+   * @return generated operator Id
+   */
+  String generate();
 }

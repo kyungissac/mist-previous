@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.driver.parameters;
+package edu.snu.mist.task.parameters;
 
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
-@NamedParameter(doc = "if it is local, it runs MistDriver and MistTasks on local environment," +
-    "else, it runs on yarn environment", short_name = "local", default_value = "false")
-public final class IsLocal implements Name<Boolean> {
+/**
+ * Prefix used for making operator IDs.
+ */
+@NamedParameter(doc = "A prefix used for making operator ID", default_value = "operator-")
+public final class OperatorIdPrefix implements Name<String> {
   // empty
 }

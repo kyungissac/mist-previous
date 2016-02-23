@@ -19,6 +19,7 @@ import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.operators.Operator;
 import org.apache.reef.io.Tuple;
 import org.apache.reef.tang.annotations.DefaultImplementation;
+import org.apache.reef.tang.exceptions.InjectionException;
 
 /**
  * This interface is for generating physical plan from logical plan.
@@ -31,5 +32,5 @@ public interface PhysicalPlanGenerator {
    * @param queryIdAndLogicalPlan the tuple of queryId and logical plan
    * @return physical plan
    */
-  PhysicalPlan<Operator> generate(Tuple<String, LogicalPlan> queryIdAndLogicalPlan);
+  PhysicalPlan<Operator> generate(Tuple<String, LogicalPlan> queryIdAndLogicalPlan) throws InjectionException;
 }

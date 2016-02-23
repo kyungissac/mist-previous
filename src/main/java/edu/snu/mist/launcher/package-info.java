@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.parameters;
-
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
-
-@NamedParameter(doc = "The number of mist executors", short_name = "num_executors")
-public final class NumExecutors implements Name<Integer> {
-}
+/**
+ * A package of mist launcher.
+ */
+package edu.snu.mist.launcher;

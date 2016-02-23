@@ -63,6 +63,7 @@ public final class SourceInfoProviderImpl implements SourceInfoProvider {
       }
     }
     sourceInfoBuilder.setSourceConfiguration(serializedSourceConf);
+    sourceInfoBuilder.setSourceIndex(sourceStream.getSourceIndex());
     return sourceInfoBuilder.build();
   }
 }
