@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class SourceStream<T> extends ContinuousStreamImpl<T> {
 
-  private static final AtomicInteger sourceIndexGenerator = new AtomicInteger(0);
+  private static final AtomicInteger INDEX_GENERATOR = new AtomicInteger(0);
 
   /**
    * The value for source configuration.
@@ -47,7 +47,7 @@ public abstract class SourceStream<T> extends ContinuousStreamImpl<T> {
     super(StreamType.ContinuousType.SOURCE);
     this.sourceType = sourceType;
     this.sourceConfiguration = sourceConfiguration;
-    this.sourceIndex = sourceIndexGenerator.getAndIncrement();
+    this.sourceIndex = INDEX_GENERATOR.getAndIncrement();
   }
 
   /**
