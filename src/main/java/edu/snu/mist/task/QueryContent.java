@@ -32,6 +32,8 @@ public interface QueryContent {
     ACTIVE
   }
 
+  public void setLatestActiveTime(long latestActiveTime);
+
   public void setQueryInfo(Map<SourceGenerator, Set<OperatorChain>> sourceMap,
                            DAG<OperatorChain> operatorChains,
                            Map<OperatorChain, Set<Sink>> sinkMap);

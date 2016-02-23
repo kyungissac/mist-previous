@@ -41,6 +41,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
   private final long gracePeriod;
 
   private final ScheduledExecutorService scheduledExecutorService;
+
   @Inject
   private DefaultQueryManagerImpl(final QueryStore queryStore,
                                   @Parameter(GracePeriod.class) final long gracePeriod) {
@@ -95,36 +96,35 @@ final class DefaultQueryManagerImpl implements QueryManager {
     final Queue queue = queryContent.getQueue();
     final Object input = sourceInput.getInput();
     final Set<OperatorChain> nextOps = queryContent.getSourceMap().get(sourceInput.getSrc());
+    final long currTime = System.currentTimeMillis();
+    queryContent.setLatestActiveTime(currTime);
 
     switch (queryContent.getQueryStatus()) {
       case ACTIVE:
-        while (queue.isEmpty()) {
-          // if query is active but queue is not empty, wait until the queue becomes empty.
+        if (!queue.isEmpty()) {
+          // if query is active but queue is not empty, add the input to the queue.
           synchronized (queue) {
-            try {
-              queue.wait();
-            } catch (final InterruptedException e) {
-              e.printStackTrace();
-            }
+            queue.add(input);
           }
+        } else {
+          forwardInput(nextOps, input);
         }
-        forwardInput(nextOps, input);
         break;
       case PARTIALLY_ACTIVE:
         // Load states of StatefulOperators.
         // After loading the states, it should set the query status to ACTIVE
         // and forwards the inputs in the queue to next operators.
+        queue.add(input);
         queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
         // TODO[MIST-#]: Load states of a query.
-        queue.add(input);
         break;
       case INACTIVE:
         // Load states and info of the query.
         // After loading the states and info, it should set the query status to ACTIVE
         // and forwards the inputs in the queue to next operators.
+        queue.add(input);
         queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
         // TODO[MIST-#]: Load info of a query.
-        queue.add(input);
         break;
       default:
         throw new RuntimeException("Invalid query status");
