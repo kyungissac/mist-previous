@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task;
+package edu.snu.mist.task.querymanager;
 
 import edu.snu.mist.api.StreamType;
 import edu.snu.mist.common.DAG;
 import edu.snu.mist.common.GraphUtils;
 import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.task.OperatorChain;
 import edu.snu.mist.task.operators.Operator;
 import edu.snu.mist.task.operators.StatefulOperator;
 import edu.snu.mist.task.sinks.Sink;

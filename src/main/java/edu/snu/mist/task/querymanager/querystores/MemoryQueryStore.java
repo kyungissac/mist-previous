@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.querystore;
+package edu.snu.mist.task.querymanager.querystores;
 
 import org.apache.reef.io.Tuple;
 import org.apache.reef.wake.EventHandler;
@@ -43,7 +43,9 @@ public final class MemoryQueryStore implements QueryStore {
                          final String state,
                          final EventHandler<Tuple<String, String>> callback) {
     stateMap.put(queryId, state);
-    callback.onNext(new Tuple<>(queryId, state));
+    if (callback != null) {
+      callback.onNext(new Tuple<>(queryId, state));
+    }
   }
 
   @Override
@@ -51,7 +53,9 @@ public final class MemoryQueryStore implements QueryStore {
                                final String logicalPlan,
                                final EventHandler<Tuple<String, String>> callback) {
     logicalPlanMap.put(queryId, logicalPlan);
-    callback.onNext(new Tuple<>(queryId, logicalPlan));
+    if (callback != null) {
+      callback.onNext(new Tuple<>(queryId, logicalPlan));
+    }
   }
 
   @Override
@@ -70,6 +74,8 @@ public final class MemoryQueryStore implements QueryStore {
   public void deleteQuery(final String queryId, final EventHandler<String> callback) {
     logicalPlanMap.remove(queryId);
     stateMap.remove(queryId);
-    callback.onNext(queryId);
+    if (callback != null) {
+      callback.onNext(queryId);
+    }
   }
 }

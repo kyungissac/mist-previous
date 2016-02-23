@@ -20,6 +20,7 @@ import edu.snu.mist.common.GraphUtils;
 import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.task.operators.Operator;
 import edu.snu.mist.task.parameters.NumSubmitterThreads;
+import edu.snu.mist.task.querymanager.QueryManager;
 import edu.snu.mist.task.sources.SourceGenerator;
 import org.apache.reef.io.Tuple;
 import org.apache.reef.io.network.util.StringIdentifierFactory;

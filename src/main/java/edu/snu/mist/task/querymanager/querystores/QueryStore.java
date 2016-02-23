@@ -1,4 +1,4 @@
-package edu.snu.mist.task.querystore;
+package edu.snu.mist.task.querymanager.querystores;
 
 import org.apache.reef.io.Tuple;
 import org.apache.reef.tang.annotations.DefaultImplementation;

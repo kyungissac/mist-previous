@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * This package contains QueryStore related interfaces and implementation.
+ * A package of mist query stores.
  */
-package edu.snu.mist.task.querystore;
+package edu.snu.mist.task.querymanager.querystores;

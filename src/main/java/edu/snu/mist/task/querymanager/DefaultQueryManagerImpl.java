@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package edu.snu.mist.task;
+package edu.snu.mist.task.querymanager;
 
 import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.task.*;
 import edu.snu.mist.task.executor.MistExecutor;
 import edu.snu.mist.task.parameters.GracePeriod;
-import edu.snu.mist.task.querystore.QueryStore;
+import edu.snu.mist.task.querymanager.querystores.QueryStore;
 import org.apache.avro.io.*;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
@@ -58,7 +59,6 @@ final class DefaultQueryManagerImpl implements QueryManager {
     scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
-        // checkpoint and unload states/info from memory.
 
       }
     }, gracePeriod, gracePeriod, TimeUnit.MILLISECONDS);
@@ -73,7 +73,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
     final QueryContent queryContent = new DefaultQueryContentImpl(queryId,
         physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap(), logicalPlan);
     queryInfoMap.put(queryId, queryContent);
-    // TODO[MIST-#]: Deserialize physical plan and store query info and state to QueryStore.
+    queryStore.storeLogicalPlan(queryId, logicalPlanToString(logicalPlan), null);
   }
 
   private String logicalPlanToString(final LogicalPlan logicalPlan) {
@@ -108,7 +108,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
 
   @Override
   public void close() throws Exception {
-
+    scheduledExecutorService.shutdown();
   }
 
   private void forwardInput(final Set<OperatorChain> nextOperators, final Object input) {

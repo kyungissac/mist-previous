@@ -18,7 +18,7 @@ package edu.snu.mist.task;
 /**
  * This class is a default implementation of OperatorChainJob.
  */
-final class DefaultOperatorChainJob implements OperatorChainJob {
+public final class DefaultOperatorChainJob implements OperatorChainJob {
 
   /**
    * A OperatorChain for computing inputs.
@@ -30,7 +30,7 @@ final class DefaultOperatorChainJob implements OperatorChainJob {
    */
   private Object input;
 
-  DefaultOperatorChainJob(final OperatorChain operatorChain,
+  public DefaultOperatorChainJob(final OperatorChain operatorChain,
                           final Object input) {
     this.operatorChain = operatorChain;
     this.input = input;
