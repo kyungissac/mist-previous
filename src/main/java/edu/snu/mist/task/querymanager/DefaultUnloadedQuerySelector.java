@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 public final class DefaultUnloadedQuerySelector implements UnloadedQuerySelector {
 
@@ -48,10 +47,10 @@ public final class DefaultUnloadedQuerySelector implements UnloadedQuerySelector
     // select unloading queries
     final List<QueryContent> unloadingQueries = new LinkedList<>();
     for (final QueryContent queryContent : queue) {
-      if (System.currentTimeMillis() - queryContent.getLatestActiveTime() > maxWaitTimeThreshold) {
-        final AtomicReference<QueryContent.QueryStatus> queryStatus = queryContent.getQueryStatus();
-        if (queryStatus.get() == QueryContent.QueryStatus.ACTIVE) {
-          if (queryStatus.compareAndSet(QueryContent.QueryStatus.ACTIVE, QueryContent.QueryStatus.UNLOADING)) {
+      synchronized (queryContent) {
+        if (System.currentTimeMillis() - queryContent.getLatestActiveTime() > maxWaitTimeThreshold) {
+          if (queryContent.getQueryStatus() == QueryContent.QueryStatus.ACTIVE) {
+            queryContent.setQueryStatus(QueryContent.QueryStatus.UNLOADING);
             unloadingQueries.add(queryContent);
           }
         }

@@ -59,7 +59,8 @@ final class DefaultQueryManagerImpl implements QueryManager {
     final QueryContent queryContent = new DefaultQueryContentImpl(queryId,
         physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap());
     queryInfoMap.put(queryId, queryContent);
-    queryStore.storeLogicalPlan(queryId, AvroSerializer.avroToString(logicalPlan, LogicalPlan.class), null);
+    // Store logical plan
+    //queryStore.storeLogicalPlan(queryId, AvroSerializer.avroToString(logicalPlan, LogicalPlan.class), null);
   }
 
   @Override
@@ -81,6 +82,10 @@ final class DefaultQueryManagerImpl implements QueryManager {
     }
   }
 
+  /**
+   * Receive source input from source generator.
+   * @param sourceInput source input
+   */
   @Override
   public void emit(final SourceInput sourceInput) {
     final QueryContent queryContent = queryInfoMap.get(sourceInput.getQueryId());
@@ -88,37 +93,37 @@ final class DefaultQueryManagerImpl implements QueryManager {
     final Object input = sourceInput.getInput();
     final Set<OperatorChain> nextOps = queryContent.getSourceMap().get(sourceInput.getSrc());
     final long currTime = System.currentTimeMillis();
-    queryContent.setLatestActiveTime(currTime);
 
-    switch (queryContent.getQueryStatus().get()) {
-      case ACTIVE:
-        if (!queue.isEmpty()) {
-          // if query is active but queue is not empty, add the input to the queue.
-          synchronized (queue) {
+    synchronized (queryContent) {
+      queryContent.setLatestActiveTime(currTime);
+      switch (queryContent.getQueryStatus()) {
+        case ACTIVE:
+          if (!queue.isEmpty()) {
+            // if query is active but queue is not empty, add the input to the queue.
             queue.add(input);
+          } else {
+            forwardInput(nextOps, input);
           }
-        } else {
-          forwardInput(nextOps, input);
-        }
-        break;
-      case PARTIALLY_ACTIVE:
-        // Load states of StatefulOperators.
-        // After loading the states, it should set the query status to ACTIVE
-        // and forwards the inputs in the queue to next operators.
-        queue.add(input);
-        //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
-        // TODO[MIST-#]: Load states of a query.
-        break;
-      case INACTIVE:
-        // Load states and info of the query.
-        // After loading the states and info, it should set the query status to ACTIVE
-        // and forwards the inputs in the queue to next operators.
-        queue.add(input);
-        //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
-        // TODO[MIST-#]: Load info of a query.
-        break;
-      default:
-        throw new RuntimeException("Invalid query status");
+          break;
+        case PARTIALLY_ACTIVE:
+          // Load states of StatefulOperators.
+          // After loading the states, it should set the query status to ACTIVE
+          // and forwards the inputs in the queue to next operators.
+          queue.add(input);
+          //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+          // TODO[MIST-#]: Load states of a query.
+          break;
+        case INACTIVE:
+          // Load states and info of the query.
+          // After loading the states and info, it should set the query status to ACTIVE
+          // and forwards the inputs in the queue to next operators.
+          queue.add(input);
+          //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+          // TODO[MIST-#]: Load info of a query.
+          break;
+        default:
+          throw new RuntimeException("Invalid query status");
+      }
     }
   }
 
@@ -128,23 +133,23 @@ final class DefaultQueryManagerImpl implements QueryManager {
         unloadedQuerySelector.selectUnloadedQueries(queryInfoMap);
     // Serialize query states
     for (final QueryContent queryContent : queriesToBeUnloaded) {
-      final Set<StatefulOperator> statefulOperators = queryContent.getStatefulOperators();
-      final QueryState.Builder stateBuilder = QueryState.newBuilder();
-      stateBuilder.setQueryId(queryContent.getQueryId());
-      final Map<CharSequence, ByteBuffer> stateMap = new HashMap<>();
-      for (final StatefulOperator statefulOperator : statefulOperators) {
-        stateMap.put(statefulOperator.getOperatorIdentifier().toString(),
-            ByteBuffer.wrap(SerializationUtils.serialize(statefulOperator.getState())));
+      synchronized (queryContent) {
+        final Set<StatefulOperator> statefulOperators = queryContent.getStatefulOperators();
+        final QueryState.Builder stateBuilder = QueryState.newBuilder();
+        stateBuilder.setQueryId(queryContent.getQueryId());
+        final Map<CharSequence, ByteBuffer> stateMap = new HashMap<>();
+        for (final StatefulOperator statefulOperator : statefulOperators) {
+          stateMap.put(statefulOperator.getOperatorIdentifier().toString(),
+              ByteBuffer.wrap(SerializationUtils.serialize(statefulOperator.getState())));
+        }
+        stateBuilder.setOperatorStateMap(stateMap);
+        // store query state
+        queryStore.storeState(queryContent.getQueryId(),
+            AvroSerializer.avroToString(stateBuilder.build(), QueryState.class), null);
+        // unload query
+        queryContent.clearQueryInfo();
+        queryContent.setQueryStatus(QueryContent.QueryStatus.PARTIALLY_ACTIVE);
       }
-      stateBuilder.setOperatorStateMap(stateMap);
-      // store query state
-      queryStore.storeState(queryContent.getQueryId(),
-          AvroSerializer.avroToString(stateBuilder.build(), QueryState.class), null);
-      // unload query
-      queryContent.clearQueryInfo();
-      queryContent.getQueryStatus()
-          .compareAndSet(QueryContent.QueryStatus.UNLOADING,
-              QueryContent.QueryStatus.PARTIALLY_ACTIVE);
     }
   }
 }

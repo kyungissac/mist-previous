@@ -24,16 +24,15 @@ import edu.snu.mist.task.sources.SourceGenerator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 public interface QueryContent {
 
   public enum QueryStatus {
     INACTIVE,
-    PARTIALLY_ACTIVE,
-    ACTIVE,
     UNLOADING,
+    PARTIALLY_ACTIVE,
     LOADING,
+    ACTIVE,
   }
 
   void setLatestActiveTime(long latestActiveTime);
@@ -44,7 +43,9 @@ public interface QueryContent {
                            DAG<OperatorChain> operatorChains,
                            Map<OperatorChain, Set<Sink>> sinkMap);
 
-  AtomicReference<QueryStatus> getQueryStatus();
+  QueryStatus getQueryStatus();
+
+  void setQueryStatus(QueryStatus queryStatus);
 
   Queue getQueue();
 
