@@ -33,7 +33,7 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
   /**
    * An output emitter.
    */
-  protected OutputEmitter<I> outputEmitter;
+  protected OutputEmitter<SourceInput<I>> outputEmitter;
 
   /**
    * A flag for close.
@@ -90,7 +90,7 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
             if (input == null) {
               Thread.sleep(sleepTime);
             } else {
-              outputEmitter.emit(input);
+              outputEmitter.emit(new SourceInput<>(queryId, this, input));
             }
           } catch (final IOException e) {
             e.printStackTrace();
@@ -132,7 +132,7 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
   }
 
   @Override
-  public void setOutputEmitter(final OutputEmitter<I> emitter) {
+  public void setOutputEmitter(final OutputEmitter<SourceInput<I>> emitter) {
     this.outputEmitter = emitter;
   }
 }
