@@ -16,10 +16,21 @@
 package edu.snu.mist.task.sinks;
 
 import edu.snu.mist.task.common.InputHandler;
+import org.apache.reef.wake.Identifier;
 
 /**
  * Sink consumes inputs and does final process, such as print, save input to database and so on.
  */
 public interface Sink<I> extends InputHandler<I>, AutoCloseable {
 
+  /**
+   * Identifier of sink.
+   */
+  Identifier getIdentifier();
+
+  /**
+   * Gets the query identifier containing this sink.
+   * @return an identifier
+   */
+  Identifier getQueryIdentifier();
 }

@@ -119,7 +119,8 @@ public final class QuerySubmitterTest {
 
     // Create source
     final StringIdentifierFactory identifierFactory = new StringIdentifierFactory();
-    final SourceGenerator src = new TestSourceGenerator(inputs, identifierFactory.getNewInstance("1"));
+    final SourceGenerator src = new TestSourceGenerator(inputs,
+        identifierFactory.getNewInstance(queryId), identifierFactory.getNewInstance("testSource"));
 
     // Create operators
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
@@ -267,9 +268,9 @@ public final class QuerySubmitterTest {
    */
   final class TestSourceGenerator extends BaseSourceGenerator<String> {
     private final Iterator<String> inputs;
-    TestSourceGenerator(final List<String> inputs,
-                        final Identifier identifier) {
-      super(1000, "testQuery", identifier);
+    TestSourceGenerator(final List<String> inputs, final Identifier queryId,
+                        final Identifier sourceId) {
+      super(1000, queryId, sourceId);
       this.inputs = inputs.iterator();
     }
 
@@ -312,6 +313,16 @@ public final class QuerySubmitterTest {
     public void handle(final I input) {
       result.add(input);
       countDownLatch.countDown();
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+      return null;
+    }
+
+    @Override
+    public Identifier getQueryIdentifier() {
+      return null;
     }
   }
 }

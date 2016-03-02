@@ -15,15 +15,17 @@
  */
 package edu.snu.mist.task.sources;
 
+import org.apache.reef.wake.Identifier;
+
 public final class SourceInput<I> {
 
-  private final String queryId;
+  private final Identifier queryId;
 
   private final SourceGenerator src;
 
   private final I input;
 
-  public SourceInput(final String queryId,
+  public SourceInput(final Identifier queryId,
                      final SourceGenerator src,
                      final I input) {
     this.queryId = queryId;
@@ -31,7 +33,7 @@ public final class SourceInput<I> {
     this.input = input;
   }
 
-  public String getQueryId() {
+  public Identifier getQueryIdentifier() {
     return queryId;
   }
 

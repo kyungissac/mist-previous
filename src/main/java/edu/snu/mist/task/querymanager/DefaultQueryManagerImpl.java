@@ -18,11 +18,13 @@ package edu.snu.mist.task.querymanager;
 
 import edu.snu.mist.formats.avro.LogicalPlan;
 import edu.snu.mist.formats.avro.QueryState;
-import edu.snu.mist.task.*;
+import edu.snu.mist.task.DefaultOperatorChainJob;
+import edu.snu.mist.task.OperatorChain;
+import edu.snu.mist.task.OperatorChainJob;
+import edu.snu.mist.task.PhysicalPlan;
 import edu.snu.mist.task.executor.MistExecutor;
 import edu.snu.mist.task.operators.StatefulOperator;
-import edu.snu.mist.task.querymanager.querystores.QueryStore;
-import edu.snu.mist.utils.AvroSerializer;
+import edu.snu.mist.task.sources.SourceInput;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.reef.wake.EventHandler;
 
@@ -88,7 +90,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
    */
   @Override
   public void emit(final SourceInput sourceInput) {
-    final QueryContent queryContent = queryInfoMap.get(sourceInput.getQueryId());
+    final QueryContent queryContent = queryInfoMap.get(sourceInput.getQueryIdentifier());
     final Queue queue = queryContent.getQueue();
     final Object input = sourceInput.getInput();
     final Set<OperatorChain> nextOps = queryContent.getSourceMap().get(sourceInput.getSrc());

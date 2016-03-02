@@ -59,12 +59,15 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
   /**
    * Identifier of SourceGenerator.
    */
-  private final Identifier identifier;
+  protected final Identifier identifier;
 
-  private final String queryId;
+  /**
+   * Identifier of Query.
+   */
+  protected final Identifier queryId;
 
   public BaseSourceGenerator(final long sleepTime,
-                             final String queryId,
+                             final Identifier queryId,
                              final Identifier identifier) {
     // TODO[MIST-152]: Threads of SourceGenerator should be managed judiciously.
     this.executorService = Executors.newSingleThreadExecutor();
@@ -129,6 +132,11 @@ public abstract class BaseSourceGenerator<I> implements SourceGenerator<I> {
   @Override
   public Identifier getIdentifier() {
     return identifier;
+  }
+
+  @Override
+  public Identifier getQueryIdentifier() {
+    return queryId;
   }
 
   @Override

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2016 Seoul National University
  *
@@ -35,4 +36,9 @@ public interface SourceGenerator<I> extends OutputEmittable<SourceInput<I>>, Aut
    * Identifier of source generator.
    */
   Identifier getIdentifier();
+
+  /**
+   * Gets the query identifier containing this source.
+   */
+  Identifier getQueryIdentifier();
 }

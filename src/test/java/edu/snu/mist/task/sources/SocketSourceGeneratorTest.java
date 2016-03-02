@@ -97,6 +97,8 @@ public final class SocketSourceGeneratorTest {
     });
 
     final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
+    jcb.bindNamedParameter(QueryId.class, "testQuery");
+    jcb.bindNamedParameter(SourceId.class, "testSource");
     jcb.bindNamedParameter(SocketServerIp.class, serverIpAddress);
     jcb.bindNamedParameter(SocketServerPort.class,  Integer.toString(port));
     jcb.bindNamedParameter(SourceId.class, "testTextSocketStreamGenerator");
@@ -105,7 +107,7 @@ public final class SocketSourceGeneratorTest {
     final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
     try (final SourceGenerator<String> sourceGenerator = injector.getInstance(SourceGenerator.class)) {
       sourceGenerator.setOutputEmitter((data) -> {
-        result.add(data);
+        result.add(data.getInput());
         countDownLatch.countDown();
       });
       sourceGenerator.start();

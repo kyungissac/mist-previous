@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.task.sources.parameters;
-
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
-
-@NamedParameter(doc = "Identifier for source")
-public final class SourceId implements Name<String> {
-  // empty
-}
+/**
+ * This package contains parameters for sinks.
+ */
+package edu.snu.mist.task.sinks.parameters;
