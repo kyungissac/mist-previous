@@ -16,9 +16,8 @@
 
 package edu.snu.mist.examples;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -29,13 +28,13 @@ import java.util.concurrent.Executors;
 /**
  * Simple sink server to print every received sentence.
  */
-public final class SinkServer implements Runnable {
+public final class SourceServer implements Runnable {
   private final ExecutorService executorService;
   private final ServerSocket serverSocket;
-  private final List<BufferedReader> readers;
+  private final List<PrintWriter> writers;
 
-  SinkServer(final int port) throws IOException {
-    readers = new ArrayList<>(10000);
+  SourceServer(final int port) throws IOException {
+    writers = new ArrayList<>(10000);
     executorService = Executors.newFixedThreadPool(101);
     serverSocket = new ServerSocket(port);
   }
@@ -45,7 +44,7 @@ public final class SinkServer implements Runnable {
     try {
       executorService.execute(new Sender());
       while(true) {
-        System.out.println("SinkServer running");
+        System.out.println("SourceServer running");
         executorService.execute(new Handler(serverSocket.accept()));
       }
     } catch (IOException e) {
@@ -58,17 +57,15 @@ public final class SinkServer implements Runnable {
     }
     public void run() {
       while(true) {
-        synchronized (readers) {
-          for(BufferedReader reader: readers) {
-            try {
-              final String line = reader.readLine();
-              if (line != null) {
-                System.out.println(line + "\tsink\t" + System.currentTimeMillis());
-              }
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
+        synchronized (writers) {
+          for(PrintWriter writer: writers) {
+            writer.println("source\t"+System.currentTimeMillis()+"\t");
           }
+        }
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
         }
       }
     }
@@ -80,9 +77,9 @@ public final class SinkServer implements Runnable {
       this.socket = socket;
     }
     public void run() {
-      synchronized (readers) {
+      synchronized (writers) {
         try {
-          readers.add(new BufferedReader(new InputStreamReader(socket.getInputStream())));
+          writers.add(new PrintWriter(socket.getOutputStream(), true));
         } catch (IOException e) {
           e.printStackTrace();
         }

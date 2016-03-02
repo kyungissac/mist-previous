@@ -28,6 +28,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This source generator fetches data stream from socket server and generates String inputs.
@@ -36,6 +38,7 @@ import java.net.Socket;
  * TODO[MIST-152]: Threads of SourceGenerator should be managed judiciously.
  */
 public final class TextSocketStreamGenerator extends BaseSourceGenerator<String> {
+  private static final Logger LOG = Logger.getLogger(TextSocketStreamGenerator.class.getName());
 
   /**
    * A client socket.
@@ -63,6 +66,7 @@ public final class TextSocketStreamGenerator extends BaseSourceGenerator<String>
 
   @Override
   public String nextInput() throws IOException {
+    LOG.log(Level.WARNING, "QueryID\t"+this.queryId+"\tSourceTime\t"+System.currentTimeMillis());
     return bf.readLine();
   }
 

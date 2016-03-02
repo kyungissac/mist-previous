@@ -42,8 +42,8 @@ public final class HelloMist {
   private static int driverPort = 20332;
   private static String sourceHost = "localhost";
   private static int sourcePort = 20331;
-  private static final String SINK_HOST = "localhost";
-  private static final int SINK_PORT = 20330;
+  private static String sinkHost = "localhost";
+  private static int sinkPort = 20330;
 
   /**
    * Print command line options.
@@ -81,8 +81,10 @@ public final class HelloMist {
     options.addOption(helpOption);
     options.addOption(setOption("d", "driver", "Address of running MIST driver" +
         " in the form of hostname:port (Default: localhost:20332)."));
-    options.addOption(setOption("s", "source", "Address of running source server" +
+    options.addOption(setOption("s", "source", "Address of source server" +
         " in the form of hostname:port (Default: localhost:20331)."));
+    options.addOption(setOption("k", "sink", "Address of sink server" +
+            " in the form of hostname:port (Default: localhost:20330)."));
     return options;
   }
 
@@ -95,24 +97,34 @@ public final class HelloMist {
    * @throws InjectionException
    */
   public static APIQuerySubmissionResult submitQuery() throws IOException, InjectionException {
-    final SourceConfiguration localTextSocketSourceConf = new TextSocketSourceConfigurationBuilderImpl()
-        .set(TextSocketSourceParameters.SOCKET_HOST_ADDRESS, sourceHost)
-        .set(TextSocketSourceParameters.SOCKET_HOST_PORT, sourcePort)
-        .build();
+    int i = 0;
+    while(true) {
+      final SourceConfiguration localTextSocketSourceConf = new TextSocketSourceConfigurationBuilderImpl()
+              .set(TextSocketSourceParameters.SOCKET_HOST_ADDRESS, sourceHost)
+              .set(TextSocketSourceParameters.SOCKET_HOST_PORT, sourcePort)
+              .build();
 
-    final SinkConfiguration localTextSocketSinkConf = new TextSocketSinkConfigurationBuilderImpl()
-        .set(TextSocketSinkParameters.SOCKET_HOST_ADDRESS, SINK_HOST)
-        .set(TextSocketSinkParameters.SOCKET_HOST_PORT, SINK_PORT)
-        .build();
+      final SinkConfiguration localTextSocketSinkConf = new TextSocketSinkConfigurationBuilderImpl()
+              .set(TextSocketSinkParameters.SOCKET_HOST_ADDRESS, sinkHost)
+              .set(TextSocketSinkParameters.SOCKET_HOST_PORT, sinkPort)
+              .build();
 
-    final Sink sink = new TextSocketSourceStream<String>(localTextSocketSourceConf)
-        .filter(s -> s.startsWith("HelloMIST:"))
-        .map(s -> s.substring("HelloMIST:".length()).trim())
-        .textSocketOutput(localTextSocketSinkConf);
-    final MISTQuery query = sink.getQuery();
+      final int finalI = i;
+      final Sink sink = new TextSocketSourceStream<String>(localTextSocketSourceConf)
+              .filter(s -> s.startsWith("source\t"))
+              .map(s -> "querynum\t" + finalI + "\t" + s + "driver\t" + System.currentTimeMillis() + "\t")
+              .textSocketOutput(localTextSocketSinkConf);
+      final MISTQuery query = sink.getQuery();
 
-    final MISTExecutionEnvironment executionEnvironment = new MISTExecutionEnvironmentImpl(driverHost, driverPort);
-    return executionEnvironment.submit(query);
+      final MISTExecutionEnvironment executionEnvironment = new MISTExecutionEnvironmentImpl(driverHost, driverPort);
+      System.out.println("Query "+i+" submission result: "+executionEnvironment.submit(query));
+      i++;
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   /**
@@ -140,7 +152,16 @@ public final class HelloMist {
       sourcePort = Integer.parseInt(sourceAddr[1]);
     }
 
-    Thread sinkServer = new Thread(new SinkServer(SINK_PORT));
+    if (cl.hasOption("k")) {
+      final String[] sinkAddr = cl.getOptionValue("k", "localhost:20330").split(":");
+      sinkHost = sinkAddr[0];
+      sinkPort = Integer.parseInt(sinkAddr[1]);
+    }
+
+    Thread sourceServer = new Thread(new SourceServer(sourcePort));
+    sourceServer.start();
+
+    Thread sinkServer = new Thread(new SinkServer(sinkPort));
     sinkServer.start();
 
     final APIQuerySubmissionResult result = submitQuery();

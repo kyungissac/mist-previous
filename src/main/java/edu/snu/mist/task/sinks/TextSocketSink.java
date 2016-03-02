@@ -28,6 +28,8 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This sink sends data using socket.
@@ -36,7 +38,7 @@ import java.net.Socket;
  * TODO[MIST-152]: Threads of Sink should be managed judiciously.
  */
 public final class TextSocketSink<I> implements Sink<I> {
-
+  private static final Logger LOG = Logger.getLogger(TextSocketSink.class.getName());
   /**
    * A client socket.
    */
@@ -76,6 +78,7 @@ public final class TextSocketSink<I> implements Sink<I> {
     this.writer = new PrintWriter(socket.getOutputStream(), true);
     // TODO[MIST-152]: Threads of Sink should be managed judiciously.
     this.singleThreadStage = new SingleThreadStage<I>((input) -> {
+      LOG.log(Level.WARNING, "QueryID\t"+this.queryId+"\tSinkTime\t"+System.currentTimeMillis());
       writer.println(input.toString());
     }, 100);
   }
