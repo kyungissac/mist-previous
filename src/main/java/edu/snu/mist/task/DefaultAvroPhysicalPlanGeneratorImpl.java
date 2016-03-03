@@ -45,6 +45,15 @@ final class DefaultAvroPhysicalPlanGeneratorImpl implements AvroPhysicalPlanGene
     this.operatorIdGenerator = operatorIdGenerator;
   }
 
+  /**
+   * Return the list of implementations for the vertex.
+   * For example, if the vertex represets map operator,
+   * this function returns the actual classes for the map operator.
+   * (Suppose there are multiple implementations for map operator)
+   * It returns *List* because the operator could be parallelized.
+   * @param vertex vertex (source, operator, sink)
+   * @return list of implementation classes
+   */
   private List<String> findParallelismAndImplementation(final Vertex vertex) {
     switch (vertex.getVertexType()) {
       case SOURCE:
@@ -63,6 +72,11 @@ final class DefaultAvroPhysicalPlanGeneratorImpl implements AvroPhysicalPlanGene
     }
   }
 
+  /**
+   * Return the list of implementations for source.
+   * @param sourceInfo source info
+   * @return list of implementation classes
+   */
   private List<String> findSourceParallelismAndImplementation(final SourceInfo sourceInfo) {
     final List<String> list = new LinkedList<>();
     switch (sourceInfo.getSourceType()) {
@@ -76,6 +90,11 @@ final class DefaultAvroPhysicalPlanGeneratorImpl implements AvroPhysicalPlanGene
     }
   }
 
+  /**
+   * Return the list of implementations for instant operator.
+   * @param iOpInfo instant operator info
+   * @return list of implementation classes
+   */
   private List<String> findInstantOperatorParallelismAndImplementation(final InstantOperatorInfo iOpInfo) {
     final List<String> list = new LinkedList<>();
     switch (iOpInfo.getInstantOperatorType()) {
@@ -100,6 +119,11 @@ final class DefaultAvroPhysicalPlanGeneratorImpl implements AvroPhysicalPlanGene
     }
   }
 
+  /**
+   * Return the list of implementations for sink.
+   * @param sinkInfo sink info
+   * @return list of implementation classes
+   */
   private List<String> findSinkParallelismAndImplementation(final SinkInfo sinkInfo) {
     final List<String> list = new LinkedList<>();
     switch (sinkInfo.getSinkType()) {
@@ -113,6 +137,13 @@ final class DefaultAvroPhysicalPlanGeneratorImpl implements AvroPhysicalPlanGene
     }
   }
 
+  /**
+   * Generate avro physical plan by doing the following things:
+   * 1) determine parallelism and actual implementation classes for vertex (source, sink, operator).
+   * 2) allocate identifier to vertices.
+   * @param queryIdAndLogicalPlan the tuple of queryId and logical plan
+   * @throws IllegalArgumentException
+   */
   @Override
   public AvroPhysicalPlan generate(final Tuple<String, LogicalPlan> queryIdAndLogicalPlan)
       throws IllegalArgumentException {
@@ -122,7 +153,7 @@ final class DefaultAvroPhysicalPlanGeneratorImpl implements AvroPhysicalPlanGene
     final List<Vertex> logicalVertices = logicalPlan.getVertices();
     final List<List<Tuple<String, PhysicalVertex.Builder>>> parallelizedVertices = new LinkedList<>();
 
-    // Convert logical plan into physical plan
+    // Convert logical plan into avro physical plan
     for (final Vertex vertex : logicalVertices) {
       final List<String> implementations = findParallelismAndImplementation(vertex);
       final List<Tuple<String, PhysicalVertex.Builder>> parallelizedVertex = new LinkedList<>();

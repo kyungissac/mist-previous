@@ -27,7 +27,7 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
 @DefaultImplementation(DefaultAvroPhysicalPlanGeneratorImpl.class)
 public interface AvroPhysicalPlanGenerator {
   /**
-   * Generates the avro physical plan by deserializing the logical plan.
+   * Generates the avro physical plan from the logical plan.
    * @param queryIdAndLogicalPlan the tuple of queryId and logical plan
    * @return avro physical plan
    */
