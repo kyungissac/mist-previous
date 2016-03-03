@@ -25,12 +25,11 @@ import edu.snu.mist.task.sinks.Sink;
 import edu.snu.mist.task.sources.SourceGenerator;
 
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 final class DefaultQueryContentImpl implements QueryContent {
 
-  private final AtomicReference<QueryStatus> status;
+  private QueryStatus status;
 
   private final String queryId;
 
@@ -50,12 +49,12 @@ final class DefaultQueryContentImpl implements QueryContent {
                           final Map<SourceGenerator, Set<OperatorChain>> sourceMap,
                           final DAG<OperatorChain> operatorChains,
                           final Map<OperatorChain, Set<Sink>> sinkMap) {
-    this.status = new AtomicReference<>(QueryStatus.ACTIVE);
+    this.status = QueryStatus.ACTIVE;
     this.queryId = queryId;
     this.sources = sourceMap;
     this.operators = operatorChains;
     this.sinks = sinkMap;
-    this.queue = new LinkedBlockingQueue<>();
+    this.queue = new ConcurrentLinkedQueue<>();
     this.latestActiveTime = System.currentTimeMillis();
   }
 
@@ -95,8 +94,13 @@ final class DefaultQueryContentImpl implements QueryContent {
   }
 
   @Override
-  public AtomicReference<QueryStatus> getQueryStatus() {
+  public QueryStatus getQueryStatus() {
     return status;
+  }
+
+  @Override
+  public void setQueryStatus(final QueryStatus queryStatus) {
+    status = queryStatus;
   }
 
   @Override
@@ -121,7 +125,7 @@ final class DefaultQueryContentImpl implements QueryContent {
 
   @Override
   public void clearQueryInfo() {
-    if (status.get() == QueryStatus.INACTIVE) {
+    if (status == QueryStatus.INACTIVE) {
       sources = null;
       operators = null;
       statefulOperators = null;

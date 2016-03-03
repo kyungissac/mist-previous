@@ -102,6 +102,11 @@ final class DefaultOperatorChain implements OperatorChain {
   }
 
   @Override
+  public List<Operator> getOperators() {
+    return operators;
+  }
+
+  @Override
   public void handle(final Object input) {
     if (outputEmitter == null) {
       throw new RuntimeException("OutputEmitter should be set in OperatorChain");

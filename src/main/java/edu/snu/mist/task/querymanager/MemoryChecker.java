@@ -26,25 +26,37 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryNotificationInfo;
 import java.lang.management.MemoryPoolMXBean;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class MemoryChecker {
 
-  private long prevHandleTime;
+  private final AtomicLong prevHandleTime;
 
   @Inject
   private MemoryChecker(final MemoryListener memoryListener,
                         @Parameter(MaxHeapMemoryThreshold.class) final int maxHeapMemoryThreshold,
                         @Parameter(GracePeriod.class) final long gracePeriod) {
-    this.prevHandleTime = System.currentTimeMillis();
+    this.prevHandleTime = new AtomicLong(System.currentTimeMillis());
     //Start to monitor memory usage
     final MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
     final NotificationEmitter emitter = (NotificationEmitter) mbean;
     emitter.addNotificationListener(memoryListener, notification -> {
+      final List<MemoryPoolMXBean> pools = ManagementFactory.getMemoryPoolMXBeans();
+      for (final MemoryPoolMXBean pool : pools) {
+
+        if(pool.isCollectionUsageThresholdSupported()){
+          System.out.println(pool.getName() + ", " + pool.getType() + ", " + pool.getCollectionUsage());
+        }
+      }
+      System.out.println("noti: " + notification.getMessage() +
+          ", noti time: " + notification.getTimeStamp() + ", prevtime: " + prevHandleTime.get()
+      + ", noti type" + notification.getType());
       String notifType = notification.getType();
-      if (notifType.equals(MemoryNotificationInfo.MEMORY_THRESHOLD_EXCEEDED)) {
-        if (notification.getTimeStamp() - prevHandleTime > gracePeriod) {
-          prevHandleTime = notification.getTimeStamp();
-          return true;
+      if (notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
+        System.out.println("yyy");
+        if (notification.getTimeStamp() - prevHandleTime.get() > gracePeriod) {
+          return prevHandleTime.compareAndSet(
+              prevHandleTime.get(), notification.getTimeStamp());
         }
       }
       return false;
@@ -53,8 +65,10 @@ public final class MemoryChecker {
     //set threshold
     final List<MemoryPoolMXBean> pools = ManagementFactory.getMemoryPoolMXBeans();
     for (final MemoryPoolMXBean pool : pools) {
+      System.out.println(pool.getName() + ", " + pool.getType() + ", " + pool.isCollectionUsageThresholdSupported()
+          +", " + pool.isUsageThresholdSupported());
       if(pool.isCollectionUsageThresholdSupported()){
-        pool.setUsageThreshold(maxHeapMemoryThreshold * 1000000);
+        pool.setCollectionUsageThreshold(maxHeapMemoryThreshold * 1000000);
       }
     }
   }

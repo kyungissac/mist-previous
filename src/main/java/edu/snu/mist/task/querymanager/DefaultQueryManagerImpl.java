@@ -16,20 +16,21 @@
 
 package edu.snu.mist.task.querymanager;
 
-import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.formats.avro.AvroPhysicalPlan;
 import edu.snu.mist.formats.avro.QueryState;
-import edu.snu.mist.task.DefaultOperatorChainJob;
-import edu.snu.mist.task.OperatorChain;
-import edu.snu.mist.task.OperatorChainJob;
-import edu.snu.mist.task.PhysicalPlan;
+import edu.snu.mist.task.*;
 import edu.snu.mist.task.executor.MistExecutor;
+import edu.snu.mist.task.operators.Operator;
 import edu.snu.mist.task.operators.StatefulOperator;
 import edu.snu.mist.task.sources.SourceInput;
+import edu.snu.mist.utils.AvroSerializer;
 import org.apache.commons.lang.SerializationUtils;
+import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.wake.EventHandler;
 
 import javax.inject.Inject;
 import javax.management.Notification;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,24 +46,37 @@ final class DefaultQueryManagerImpl implements QueryManager {
 
   private final UnloadedQuerySelector unloadedQuerySelector;
 
+  private final PhysicalPlanGenerator physicalPlanGenerator;
+
+  private final OperatorChainer operatorChainer;
+
+  private final OperatorChainAllocator operatorChainAllocator;
+
   @Inject
   private DefaultQueryManagerImpl(final QueryStore queryStore,
-                                  final UnloadedQuerySelector unloadedQuerySelector) {
+                                  final UnloadedQuerySelector unloadedQuerySelector,
+                                  final PhysicalPlanGenerator physicalPlanGenerator,
+                                  final OperatorChainer operatorChainer,
+                                  final OperatorChainAllocator operatorChainAllocator) {
     this.queryInfoMap = new ConcurrentHashMap<>();
     this.queryStore = queryStore;
     this.deleteCallback = deletedId -> {};
     this.unloadedQuerySelector = unloadedQuerySelector;
+    this.physicalPlanGenerator = physicalPlanGenerator;
+    this.operatorChainer = operatorChainer;
+    this.operatorChainAllocator = operatorChainAllocator;
   }
 
   @Override
   public void registerQuery(final String queryId,
                             final PhysicalPlan<OperatorChain> physicalPlan,
-                            final LogicalPlan logicalPlan) {
+                            final AvroPhysicalPlan avroPhysicalPlan) {
     final QueryContent queryContent = new DefaultQueryContentImpl(queryId,
         physicalPlan.getSourceMap(), physicalPlan.getOperators(), physicalPlan.getSinkMap());
     queryInfoMap.put(queryId, queryContent);
-    // Store logical plan
-    //queryStore.storeLogicalPlan(queryId, AvroSerializer.avroToString(logicalPlan, LogicalPlan.class), null);
+    // Store serialized plan
+    queryStore.storeLogicalPlan(queryId,
+        AvroSerializer.avroToString(avroPhysicalPlan, AvroPhysicalPlan.class), null);
   }
 
   @Override
@@ -84,13 +98,37 @@ final class DefaultQueryManagerImpl implements QueryManager {
     }
   }
 
+  private void getQueryStateAndForwardInputs(final QueryContent queryContent, final Set<OperatorChain> nextOps) {
+    final String queryId = queryContent.getQueryId();
+    final Queue queue = queryContent.getQueue();
+    queryStore.getState(queryId, (tuple) -> {
+      // deserialize
+      final QueryState queryState = AvroSerializer.avroFromString(
+          tuple.getValue(), QueryState.getClassSchema(), QueryState.class);
+      final Set<StatefulOperator> statefulOperators = queryContent.getStatefulOperators();
+      for (final StatefulOperator statefulOperator : statefulOperators) {
+        final String operatorId = statefulOperator.getOperatorIdentifier().toString();
+        final ByteBuffer serializedState = queryState.getOperatorStateMap().get(operatorId);
+        statefulOperator.setState((Serializable)SerializationUtils.deserialize(serializedState.array()));
+      }
+      synchronized (queryContent) {
+        queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
+        while (!queue.isEmpty()) {
+          final Object i = queue.poll();
+          forwardInput(nextOps, i);
+        }
+      }
+    });
+  }
+
   /**
    * Receive source input from source generator.
    * @param sourceInput source input
    */
   @Override
   public void emit(final SourceInput sourceInput) {
-    final QueryContent queryContent = queryInfoMap.get(sourceInput.getQueryIdentifier());
+    final String queryId = sourceInput.getQueryIdentifier().toString();
+    final QueryContent queryContent = queryInfoMap.get(queryId);
     final Queue queue = queryContent.getQueue();
     final Object input = sourceInput.getInput();
     final Set<OperatorChain> nextOps = queryContent.getSourceMap().get(sourceInput.getSrc());
@@ -111,17 +149,33 @@ final class DefaultQueryManagerImpl implements QueryManager {
           // Load states of StatefulOperators.
           // After loading the states, it should set the query status to ACTIVE
           // and forwards the inputs in the queue to next operators.
+          queryContent.setQueryStatus(QueryContent.QueryStatus.LOADING);
           queue.add(input);
-          //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
-          // TODO[MIST-#]: Load states of a query.
+          getQueryStateAndForwardInputs(queryContent, nextOps);
           break;
         case INACTIVE:
           // Load states and info of the query.
           // After loading the states and info, it should set the query status to ACTIVE
           // and forwards the inputs in the queue to next operators.
+          queryContent.setQueryStatus(QueryContent.QueryStatus.LOADING);
           queue.add(input);
-          //queryContent.setQueryStatus(QueryContent.QueryStatus.ACTIVE);
-          // TODO[MIST-#]: Load info of a query.
+          queryStore.getInfo(queryId, (infoTuple) -> {
+            final AvroPhysicalPlan avroPhysicalPlan = AvroSerializer.avroFromString(infoTuple.getValue(),
+                AvroPhysicalPlan.getClassSchema(), AvroPhysicalPlan.class);
+            try {
+              final PhysicalPlan<Operator> physicalPlan = physicalPlanGenerator.generate(avroPhysicalPlan);
+              final PhysicalPlan<OperatorChain> chainPhysicalPlan = operatorChainer.chainOperators(physicalPlan);
+              operatorChainAllocator.allocate(chainPhysicalPlan.getOperators());
+              registerQuery(queryId, chainPhysicalPlan, avroPhysicalPlan);
+              getQueryStateAndForwardInputs(queryContent, nextOps);
+            } catch (final InjectionException e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            }
+          });
+          break;
+        case LOADING:
+          queue.add(input);
           break;
         default:
           throw new RuntimeException("Invalid query status");
@@ -136,21 +190,32 @@ final class DefaultQueryManagerImpl implements QueryManager {
     // Serialize query states
     for (final QueryContent queryContent : queriesToBeUnloaded) {
       synchronized (queryContent) {
-        final Set<StatefulOperator> statefulOperators = queryContent.getStatefulOperators();
-        final QueryState.Builder stateBuilder = QueryState.newBuilder();
-        stateBuilder.setQueryId(queryContent.getQueryId());
-        final Map<CharSequence, ByteBuffer> stateMap = new HashMap<>();
-        for (final StatefulOperator statefulOperator : statefulOperators) {
-          stateMap.put(statefulOperator.getOperatorIdentifier().toString(),
-              ByteBuffer.wrap(SerializationUtils.serialize(statefulOperator.getState())));
+        switch (queryContent.getQueryStatus()) {
+          case ACTIVE:
+            // Serialize and unload states
+            final Set<StatefulOperator> statefulOperators = queryContent.getStatefulOperators();
+            final QueryState.Builder stateBuilder = QueryState.newBuilder();
+            stateBuilder.setQueryId(queryContent.getQueryId());
+            final Map<CharSequence, ByteBuffer> stateMap = new HashMap<>();
+            for (final StatefulOperator statefulOperator : statefulOperators) {
+              stateMap.put(statefulOperator.getOperatorIdentifier().toString(),
+                  ByteBuffer.wrap(SerializationUtils.serialize(statefulOperator.getState())));
+            }
+            stateBuilder.setOperatorStateMap(stateMap);
+            // store query state
+            queryStore.storeState(queryContent.getQueryId(),
+                AvroSerializer.avroToString(stateBuilder.build(), QueryState.class), null);
+            queryContent.setQueryStatus(QueryContent.QueryStatus.PARTIALLY_ACTIVE);
+            break;
+          case PARTIALLY_ACTIVE:
+            // unload query
+            // Currently we suppose that query info is not changed.
+            queryContent.clearQueryInfo();
+            queryContent.setQueryStatus(QueryContent.QueryStatus.INACTIVE);
+            break;
+          default:
+            throw new RuntimeException("Invalid Query Status for query unload: " + queryContent.getQueryStatus());
         }
-        stateBuilder.setOperatorStateMap(stateMap);
-        // store query state
-        queryStore.storeState(queryContent.getQueryId(),
-            AvroSerializer.avroToString(stateBuilder.build(), QueryState.class), null);
-        // unload query
-        queryContent.clearQueryInfo();
-        queryContent.setQueryStatus(QueryContent.QueryStatus.PARTIALLY_ACTIVE);
       }
     }
   }
