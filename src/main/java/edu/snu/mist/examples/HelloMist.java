@@ -44,6 +44,7 @@ public final class HelloMist {
   private static int sourcePort = 20331;
   private static String sinkHost = "localhost";
   private static int sinkPort = 20330;
+  private static MISTExecutionEnvironment executionEnvironment;
 
   /**
    * Print command line options.
@@ -116,7 +117,6 @@ public final class HelloMist {
               .textSocketOutput(localTextSocketSinkConf);
       final MISTQuery query = sink.getQuery();
 
-      final MISTExecutionEnvironment executionEnvironment = new MISTExecutionEnvironmentImpl(driverHost, driverPort);
       System.out.println("Query "+i+" submission result: "+executionEnvironment.submit(query));
       i++;
       try {
@@ -163,6 +163,7 @@ public final class HelloMist {
 
     Thread sinkServer = new Thread(new SinkServer(sinkPort));
     sinkServer.start();
+    executionEnvironment = new MISTExecutionEnvironmentImpl(driverHost, driverPort);
 
     final APIQuerySubmissionResult result = submitQuery();
     System.out.println("Query submission result: " + result.getQueryId());
