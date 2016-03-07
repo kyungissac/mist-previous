@@ -56,10 +56,11 @@ public final class SourceServer implements Runnable {
     Sender() {
     }
     public void run() {
+      int i = 0;
       while(true) {
         synchronized (writers) {
           for(PrintWriter writer: writers) {
-            writer.println("source\t"+System.currentTimeMillis()+"\t");
+            writer.println("cycle"+i+"\tsource\t"+System.currentTimeMillis()+"\t");
           }
         }
         try {
