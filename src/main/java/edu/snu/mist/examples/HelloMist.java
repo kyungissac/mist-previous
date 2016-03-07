@@ -116,8 +116,8 @@ public final class HelloMist {
               .map(s -> {
                 String ret =  "querynum\t" + finalI + "\t" + s + "driver\t" + System.currentTimeMillis() + "\t";
                 System.out.println(ret);
-                return ret;}
-              )
+                return ret;
+              })
               .textSocketOutput(localTextSocketSinkConf);
       final MISTQuery query = sink.getQuery();
 
