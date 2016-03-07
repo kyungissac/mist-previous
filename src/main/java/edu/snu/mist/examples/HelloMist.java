@@ -112,12 +112,8 @@ public final class HelloMist {
 
       final int finalI = i;
       final Sink sink = new TextSocketSourceStream<String>(localTextSocketSourceConf)
-              .filter(s -> s.startsWith("source\t"))
-              .map(s -> {
-                String ret =  "querynum\t" + finalI + "\t" + s + "driver\t" + System.currentTimeMillis() + "\t";
-                System.out.println(ret);
-                return ret;
-              })
+              .filter(s -> s.startsWith("cycle"))
+              .map(s -> "querynum\t" + finalI + "\t" + s + "driver\t" + System.currentTimeMillis() + "\t")
               .textSocketOutput(localTextSocketSinkConf);
       final MISTQuery query = sink.getQuery();
 

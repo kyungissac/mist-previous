@@ -63,6 +63,7 @@ public final class SourceServer implements Runnable {
             writer.println("cycle"+i+"\tsource\t"+System.currentTimeMillis()+"\t");
           }
         }
+        i++;
         try {
           Thread.sleep(100);
         } catch (InterruptedException e) {
