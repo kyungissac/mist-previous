@@ -24,7 +24,7 @@ CLASSPATH=$YARN_HOME/share/hadoop/common/*:$YARN_HOME/share/hadoop/common/lib/*:
 
 YARN_CONF_DIR=$YARN_HOME/etc/hadoop
 
-CMD="java -Xmx4096m -cp $YARN_CONF_DIR:$SELF_JAR:$CLASSPATH $LOCAL_RUNTIME_TMP $LOGGING_CONFIG edu.snu.mist.examples.HelloMist $*"
+CMD="java -Xmx4096m -cp $YARN_CONF_DIR:$SELF_JAR:$CLASSPATH $LOCAL_RUNTIME_TMP $LOGGING_CONFIG edu.snu.mist.examples.MistHello $*"
 
 echo $CMD
 $CMD

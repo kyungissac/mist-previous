@@ -36,7 +36,7 @@ import java.io.IOException;
 /**
  * Example client which submits a stateless query.
  */
-public final class HelloMist {
+public final class MistHello {
 
   private static String driverHost = "localhost";
   private static int driverPort = 20332;
@@ -55,7 +55,7 @@ public final class HelloMist {
     if (reason != null) {
       System.out.println(reason);
     }
-    new HelpFormatter().printHelp("HelloMist", options);
+    new HelpFormatter().printHelp("MistHello", options);
     System.exit(1);
   }
 
@@ -91,8 +91,8 @@ public final class HelloMist {
 
   /**
    * Submit a stateless query.
-   * The query reads strings from a source server, filter strings which start with "HelloMist:",
-   * trim "HelloMist:" part of the filtered strings, and send them to a sink server.
+   * The query reads strings from a source server, filter strings which start with "MistHello:",
+   * trim "MistHello:" part of the filtered strings, and send them to a sink server.
    * @return result of the submission
    * @throws IOException
    * @throws InjectionException
@@ -169,6 +169,6 @@ public final class HelloMist {
     System.out.println("Query submission result: " + result.getQueryId());
   }
 
-  private HelloMist(){
+  private MistHello(){
   }
 }
