@@ -18,6 +18,10 @@ package edu.snu.mist.task;
 import org.apache.avro.ipc.Server;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.task.Task;
+import org.apache.reef.task.TaskMessage;
+import org.apache.reef.task.TaskMessageSource;
+import org.apache.reef.util.Optional;
+import org.apache.reef.wake.remote.impl.ObjectSerializableCodec;
 
 import javax.inject.Inject;
 import java.util.concurrent.CountDownLatch;
@@ -28,13 +32,23 @@ import java.util.logging.Logger;
  * A runtime engine running mist queries.
  * The actual query submission logic is performed by QuerySubmitter.
  */
-public final class MistTask implements Task {
+public final class MistTask implements Task, TaskMessageSource {
   private static final Logger LOG = Logger.getLogger(MistTask.class.getName());
 
   /**
    * A count down latch for sleeping and terminating this task.
    */
   private final CountDownLatch countDownLatch;
+
+  /**
+   * Codec to serialize/deserialize counter values for the updates.
+   */
+  private final ObjectSerializableCodec<Integer> codecInt = new ObjectSerializableCodec<>();
+
+  /**
+   * Current value of the counter.
+   */
+  private int counter = 0;
 
   /**
    * Default constructor of MistTask.
@@ -52,5 +66,18 @@ public final class MistTask implements Task {
     LOG.log(Level.INFO, "MistTask is started");
     countDownLatch.await();
     return new byte[0];
+  }
+
+  /**
+   * Update driver on current state of the task.
+   *
+   * @return serialized version of the counter.
+   */
+  @Override
+  public synchronized Optional<TaskMessage> getMessage() {
+    LOG.log(Level.INFO, "Message from Task {0} to the Driver: counter: {1}",
+            new Object[]{this, this.counter});
+    System.out.println("Hi Doogie");
+    return Optional.of(TaskMessage.from(MistTask.class.getName(), this.codecInt.encode(this.counter)));
   }
 }

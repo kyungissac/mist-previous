@@ -24,6 +24,7 @@ import org.apache.reef.driver.evaluator.EvaluatorRequest;
 import org.apache.reef.driver.evaluator.EvaluatorRequestor;
 import org.apache.reef.driver.task.RunningTask;
 import org.apache.reef.driver.task.TaskConfiguration;
+import org.apache.reef.driver.task.TaskMessage;
 import org.apache.reef.io.network.naming.NameResolverConfiguration;
 import org.apache.reef.io.network.naming.NameServer;
 import org.apache.reef.tang.Configuration;
@@ -31,6 +32,7 @@ import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.remote.address.LocalAddressProvider;
+import org.apache.reef.wake.remote.impl.ObjectSerializableCodec;
 import org.apache.reef.wake.time.event.StartTime;
 
 import javax.inject.Inject;
@@ -99,6 +101,11 @@ public final class MistDriver {
    */
   private final MistTaskConfigs mistTaskConfigs;
 
+  /**
+   * Integer codec is used to decode the results driver gets from the tasks.
+   */
+  private static final ObjectSerializableCodec<Integer> CODEC_INT = new ObjectSerializableCodec<>();
+
   @Inject
   private MistDriver(final EvaluatorRequestor requestor,
                      final NameServer nameServer,
@@ -123,6 +130,19 @@ public final class MistDriver {
           .setNumberOfCores(mistTaskConfigs.getNumTaskCores())
           .build());
       LOG.log(Level.INFO, "Requested Evaluator.");
+    }
+  }
+
+  /**
+   * Receive message from the Task.
+   */
+  public final class TaskMessageHandler implements EventHandler<TaskMessage> {
+    @Override
+    public void onNext(final TaskMessage message) {
+      final int result = CODEC_INT.decode(message.get());
+      final String msg = "Task message " + message.getId() + ": " + result;
+      System.out.println(msg);
+      LOG.info(msg);
     }
   }
 
@@ -151,6 +171,7 @@ public final class MistDriver {
       final Configuration taskConfiguration = TaskConfiguration.CONF
           .set(TaskConfiguration.IDENTIFIER, taskId)
           .set(TaskConfiguration.TASK, MistTask.class)
+          .set(TaskConfiguration.ON_SEND_MESSAGE, MistTask.class)
           .build();
       // submit a task
       activeContext.submitTask(

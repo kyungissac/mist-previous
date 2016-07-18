@@ -107,6 +107,7 @@ public final class MistLauncher {
         .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, MistDriver.EvaluatorAllocatedHandler.class)
         .set(DriverConfiguration.ON_CONTEXT_ACTIVE, MistDriver.ActiveContextHandler.class)
         .set(DriverConfiguration.ON_TASK_RUNNING, MistDriver.RunningTaskHandler.class)
+        .set(DriverConfiguration.ON_TASK_MESSAGE, MistDriver.TaskMessageHandler.class)
         .build();
 
     return Configurations.merge(driverConf, jcb.build());
