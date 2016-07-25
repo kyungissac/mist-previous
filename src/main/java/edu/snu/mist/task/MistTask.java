@@ -77,7 +77,6 @@ public final class MistTask implements Task, TaskMessageSource {
   public synchronized Optional<TaskMessage> getMessage() {
     LOG.log(Level.INFO, "Message from Task {0} to the Driver: counter: {1}",
             new Object[]{this, this.counter});
-    System.out.println("Hi Doogie");
     return Optional.of(TaskMessage.from(MistTask.class.getName(), this.codecInt.encode(this.counter)));
   }
 }
