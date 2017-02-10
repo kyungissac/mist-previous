@@ -13,20 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.core.task;
-
-import edu.snu.mist.formats.avro.AvroLogicalPlan;
-import org.apache.reef.tang.annotations.DefaultImplementation;
+package edu.snu.mist.api.cep.conditions;
 
 /**
- * This interface generates query ids of the submitted queries.
+ * An immutable condition operator. Should be extended before being used.
  */
-@DefaultImplementation(DefaultQueryIdGeneratorImpl.class)
-public interface QueryIdGenerator {
+public abstract class AbstractCondition {
+
   /**
-   * Generates the query id of the submitted logical plan.
-   * @param logicalPlan the submitted logical plan
-   * @return query id
+   * The type of this condition statement.
    */
-  String generate(AvroLogicalPlan logicalPlan);
+  protected final ConditionType conditionType;
+
+  /**
+   * Makes an immutable operator which has its own type.
+   * @param conditionType the type of condition.
+   */
+  protected AbstractCondition(final ConditionType conditionType) {
+    this.conditionType = conditionType;
+  }
+
+  /**
+   * @return The type of this operator
+   */
+  public ConditionType getConditionType() {
+    return conditionType;
+  }
 }

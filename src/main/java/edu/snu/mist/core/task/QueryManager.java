@@ -15,7 +15,7 @@
  */
 package edu.snu.mist.core.task;
 
-import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.formats.avro.AvroLogicalPlan;
 import edu.snu.mist.formats.avro.QueryControlResult;
 import org.apache.reef.io.Tuple;
 import org.apache.reef.tang.annotations.DefaultImplementation;
@@ -36,7 +36,7 @@ public interface QueryManager extends AutoCloseable {
    * and starts to receive input data stream of the query.
    * @param tuple
    */
-  QueryControlResult create(Tuple<String, LogicalPlan> tuple);
+  QueryControlResult create(Tuple<String, AvroLogicalPlan> tuple);
 
   /**
    * Deletes the query corresponding to the queryId submitted by client.
@@ -44,18 +44,4 @@ public interface QueryManager extends AutoCloseable {
    * @return Returns the result message of deletion.
    */
   QueryControlResult delete(String queryId);
-
-  /**
-   * Stopes the query corresponding to the queryId submitted by client.
-   * @param queryId
-   * @return Returns the results message of stop.
-   */
-  QueryControlResult stop(String queryId);
-
-  /**
-   * Resumes the query corresponding to the queryId submitted by client.
-   * @param queryId
-   * @return Returns the result message of resume.
-   */
-  QueryControlResult resume(String queryId);
 }

@@ -23,7 +23,7 @@
   [
     {
       "type": "record",
-      "name": "LogicalPlan",
+      "name": "AvroLogicalPlan",
       "fields":
       [
         {
@@ -175,34 +175,12 @@
       [
         {
           "name": "logicalPlan",
-          "type": "LogicalPlan"
+          "type": "AvroLogicalPlan"
         }
       ],
       "response": "QueryControlResult"
     },
     "deleteQueries":
-    {
-      "request":
-      [
-        {
-          "name": "queryId",
-          "type": "string"
-        }
-      ],
-      "response": "QueryControlResult"
-    },
-    "stopQueries":
-    {
-      "request":
-      [
-        {
-          "name": "queryId",
-          "type": "string"
-        }
-      ],
-      "response": "QueryControlResult"
-    },
-    "resumeQueries":
     {
       "request":
       [

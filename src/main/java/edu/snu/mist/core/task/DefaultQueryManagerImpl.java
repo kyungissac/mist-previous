@@ -20,7 +20,7 @@ import edu.snu.mist.common.GraphUtils;
 import edu.snu.mist.common.sinks.Sink;
 import edu.snu.mist.core.task.stores.QueryInfoStore;
 import edu.snu.mist.formats.avro.Direction;
-import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.formats.avro.AvroLogicalPlan;
 import edu.snu.mist.formats.avro.QueryControlResult;
 import org.apache.reef.io.Tuple;
 
@@ -106,7 +106,7 @@ final class DefaultQueryManagerImpl implements QueryManager {
     this.planStore = planStore;
   }
 
-  public QueryControlResult create(final Tuple<String, LogicalPlan> tuple) {
+  public QueryControlResult create(final Tuple<String, AvroLogicalPlan> tuple) {
     final DAG<PhysicalVertex, Direction> physicalPlan;
     final QueryControlResult queryControlResult = new QueryControlResult();
     queryControlResult.setQueryId(tuple.getKey());
@@ -256,54 +256,6 @@ final class DefaultQueryManagerImpl implements QueryManager {
     } else {
       queryControlResult.setIsSuccess(false);
       queryControlResult.setMsg(ResultMessage.noQueryId(queryId));
-    }
-    return queryControlResult;
-  }
-
-  /**
-   * For now, we stop the only stateless query, so we just deletes the query.
-   * TODO[MIST-289]: Implement stop and resume the stateful query.
-   * @param queryId
-   * @return It returns the result message.
-   */
-  @Override
-  public QueryControlResult stop(final String queryId) {
-    final QueryControlResult queryControlResult = new QueryControlResult();
-    queryControlResult.setQueryId(queryId);
-    if (deleteQueryFromManager(queryId)) {
-      queryControlResult.setIsSuccess(true);
-      queryControlResult.setMsg(ResultMessage.stopSuccess(queryId));
-    } else {
-      queryControlResult.setIsSuccess(false);
-      queryControlResult.setMsg(ResultMessage.noQueryId(queryId));
-    }
-    return queryControlResult;
-  }
-
-  /**
-   * Loads the logical plan and starts the query.
-   * TODO[MIST-291]: What happen if stop/delete/resume are executed concurrently?
-   * @param queryId
-   * @return It returns the result message.
-   */
-  @Override
-  public QueryControlResult resume(final String queryId) {
-    final DAG<PhysicalVertex, Direction> physicalPlan;
-    final QueryControlResult queryControlResult = new QueryControlResult();
-    queryControlResult.setQueryId(queryId);
-    try {
-      final LogicalPlan loadedPlan = planStore.load(queryId);
-      final Tuple<String, LogicalPlan> tuple = new Tuple<String, LogicalPlan>(queryId, loadedPlan);
-      physicalPlan = physicalPlanGenerator.generate(tuple);
-      physicalPlanMap.putIfAbsent(queryId, physicalPlan);
-      start(physicalPlan);
-      queryControlResult.setIsSuccess(true);
-      queryControlResult.setMsg(ResultMessage.resumeSuccess(queryId));
-    } catch (final Exception e) {
-      LOG.log(Level.SEVERE, "An exception occurred while resuming {0} query: {1}",
-          new Object[] {queryId, e.getMessage()});
-      queryControlResult.setIsSuccess(false);
-      queryControlResult.setMsg(e.getMessage());
     }
     return queryControlResult;
   }

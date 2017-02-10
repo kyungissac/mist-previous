@@ -28,7 +28,7 @@ import edu.snu.mist.core.parameters.NumThreads;
 import edu.snu.mist.core.parameters.PlanStorePath;
 import edu.snu.mist.core.task.stores.QueryInfoStore;
 import edu.snu.mist.formats.avro.Direction;
-import edu.snu.mist.formats.avro.LogicalPlan;
+import edu.snu.mist.formats.avro.AvroLogicalPlan;
 import junit.framework.Assert;
 import org.apache.reef.io.Tuple;
 import org.apache.reef.io.network.util.StringIdentifierFactory;
@@ -127,7 +127,7 @@ public final class QueryManagerTest {
     final Sink sink2 = new TestSink<Integer>(sink2Result, countDownAllOutputs);
 
     // Fake logical plan of QueryManager
-    final Tuple<String, LogicalPlan> tuple = new Tuple<>(queryId, new LogicalPlan());
+    final Tuple<String, AvroLogicalPlan> tuple = new Tuple<>(queryId, new AvroLogicalPlan());
 
     // Construct physical plan
     constructPhysicalPlan(tuple, dag, src, sink1, sink2);
@@ -148,122 +148,6 @@ public final class QueryManagerTest {
     Assert.assertEquals(expectedSink2Output, sink2Result);
 
     src.close();
-    queryManager.close();
-
-    // Delete plan directory and plans
-    deletePlans(injector);
-  }
-
-  /**
-   * There are two sources, two DAGs. One is for before stop,
-   * the other is for after resume.
-   * If first src generates total strings, src stops and then resume.
-   * After resume, the second src generates strings.
-   * QueryManager stops and resumes the running query correctly without any error.
-   * and the operators are executed correctly.
-   */
-  @SuppressWarnings("unchecked")
-  @Test(timeout = 5000)
-  public void testStopAndResumeQuery() throws Exception {
-    final String queryId = "testQuery";
-    final List<String> beforeStopInputs = Arrays.asList(
-        "mist is a cloud of tiny water droplets suspended in the atmosphere",
-        "a mist rose out of the river",
-        "the peaks were shrouded in mist");
-    final List<String> afterResumeInputs = Arrays.asList(
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        "In in leo nec erat fringilla mattis eu non massa.",
-        "Cras quis diam suscipit, commodo enim id, pulvinar nunc.");
-
-    // Expected results
-    final List<Map<String, Integer>> beforeStopResult = getIntermediateResult(beforeStopInputs);
-    final List<Map<String, Integer>> afterResumeResult = getIntermediateResult(afterResumeInputs);
-
-    final List<String> beforeStopExpectedSink1Output = beforeStopResult.stream()
-        .map(input -> input.toString())
-        .collect(Collectors.toList());
-    final List<Integer> beforeStopExpectedSink2Output = beforeStopResult.stream()
-        .map(totalCountMapFunc)
-        .collect(Collectors.toList());
-    final List<String> afterResumeExpectedSink1Output2 = afterResumeResult.stream()
-        .map(input -> input.toString())
-        .collect(Collectors.toList());
-    final List<Integer> afterResumeExpectedSink2Output2 = afterResumeResult.stream()
-        .map(totalCountMapFunc)
-        .collect(Collectors.toList());
-
-    // Number of expected outputs
-    final CountDownLatch countDownBeforeStopOutputs = new CountDownLatch(beforeStopResult.size() * 2);
-    final CountDownLatch countDownAfterResumeOutputs = new CountDownLatch(afterResumeResult.size() * 2);
-
-    // Create the two DAGs of the queries
-    final DAG<PhysicalVertex, Direction> beforeStopDAG = new AdjacentListDAG<>();
-    final DAG<PhysicalVertex, Direction> afterResumeDAG = new AdjacentListDAG<>();
-
-    // Create two sources
-    final StringIdentifierFactory identifierFactory = new StringIdentifierFactory();
-    final TestDataGenerator beforeStopDataGenerator = new TestDataGenerator(beforeStopInputs);
-    final EventGenerator eventGenerator =
-        new PunctuatedEventGenerator(null, input -> false, null);
-    final PhysicalSource beforeStopSrc = new PhysicalSourceImpl(
-        identifierFactory.getNewInstance("testSource"), beforeStopDataGenerator, eventGenerator);
-
-    final TestDataGenerator afterResumeDataGenerator = new TestDataGenerator(afterResumeInputs);
-    final PhysicalSource afterResumeSrc = new PhysicalSourceImpl(
-        identifierFactory.getNewInstance("testSource2"), afterResumeDataGenerator, eventGenerator);
-
-    final JavaConfigurationBuilder jcb = Tang.Factory.getTang().newConfigurationBuilder();
-    jcb.bindNamedParameter(NumThreads.class, Integer.toString(4));
-    final Injector injector = Tang.Factory.getTang().newInjector(jcb.build());
-
-    // Create sinks
-    final List<String> beforeStopSink1Result = new LinkedList<>();
-    final List<Integer> beforeStopSink2Result = new LinkedList<>();
-    final List<String> afterResumeSink1Result = new LinkedList<>();
-    final List<Integer> afterResumeSink2Result = new LinkedList<>();
-
-    final Sink beforeStopSink1 = new TestSink<String>(beforeStopSink1Result, countDownBeforeStopOutputs);
-    final Sink beforeStopSink2 = new TestSink<Integer>(beforeStopSink2Result, countDownBeforeStopOutputs);
-    final Sink afterResumeSink1 = new TestSink<String>(afterResumeSink1Result, countDownAfterResumeOutputs);
-    final Sink afterResumeSink2 = new TestSink<Integer>(afterResumeSink2Result, countDownAfterResumeOutputs);
-
-    // Fake logical plan of QueryManager
-    final Tuple<String, LogicalPlan> tuple = new Tuple<>(queryId, new LogicalPlan());
-
-    // Construct two physical plans
-    constructPhysicalPlan(tuple, beforeStopDAG, beforeStopSrc, beforeStopSink1, beforeStopSink2);
-    constructPhysicalPlan(tuple, afterResumeDAG, afterResumeSrc, afterResumeSink1, afterResumeSink2);
-
-    // Create mock PhysicalPlanGenerator. It returns the above physical plan
-    final PhysicalPlanGenerator physicalPlanGenerator = mock(PhysicalPlanGenerator.class);
-    when(physicalPlanGenerator.generate(tuple)).thenReturn(beforeStopDAG, afterResumeDAG);
-
-    // Build QueryManager
-    final QueryManager queryManager = queryManagerBuild(tuple, physicalPlanGenerator, injector);
-    queryManager.create(tuple);
-
-    // Wait until all of the outputs are generated
-    countDownBeforeStopOutputs.await();
-
-    // Stop the query
-    queryManager.stop(queryId);
-
-    // Check the outputs
-    Assert.assertEquals(beforeStopExpectedSink1Output, beforeStopSink1Result);
-    Assert.assertEquals(beforeStopExpectedSink2Output, beforeStopSink2Result);
-
-    // Resume the query
-    queryManager.resume(queryId);
-
-    // Wait until all of the outputs are generated
-    countDownAfterResumeOutputs.await();
-
-    // Check the outputs
-    Assert.assertEquals(afterResumeExpectedSink1Output2, afterResumeSink1Result);
-    Assert.assertEquals(afterResumeExpectedSink2Output2, afterResumeSink2Result);
-
-    beforeStopSrc.close();
-    afterResumeSrc.close();
     queryManager.close();
 
     // Delete plan directory and plans
@@ -292,7 +176,7 @@ public final class QueryManagerTest {
    * Construct physical plan.
    * Creates operators an partitioned queries and adds source, dag vertices, edges and sinks to dag.
    */
-  private void constructPhysicalPlan(final Tuple<String, LogicalPlan> tuple,
+  private void constructPhysicalPlan(final Tuple<String, AvroLogicalPlan> tuple,
                                      final DAG<PhysicalVertex, Direction> dag,
                                      final PhysicalSource src,
                                      final Sink sink1,
@@ -344,7 +228,7 @@ public final class QueryManagerTest {
    * QueryManager Builder.
    * It receives inputs tuple, physicalPlanGenerator, injector then makes query manager.
    */
-  private QueryManager queryManagerBuild(final Tuple<String, LogicalPlan> tuple,
+  private QueryManager queryManagerBuild(final Tuple<String, AvroLogicalPlan> tuple,
                                          final PhysicalPlanGenerator physicalPlanGenerator,
                                          final Injector injector) throws Exception {
     // Create mock PlanStore. It returns true and the above logical plan

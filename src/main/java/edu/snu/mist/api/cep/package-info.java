@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Seoul National University
+ * Copyright (C) 2016 Seoul National University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.core.task;
-
-import edu.snu.mist.formats.avro.AvroLogicalPlan;
-import org.apache.reef.tang.annotations.DefaultImplementation;
-
 /**
- * This interface generates query ids of the submitted queries.
+ * A package for defining fine-grained & stateful monitoring cep rules.
  */
-@DefaultImplementation(DefaultQueryIdGeneratorImpl.class)
-public interface QueryIdGenerator {
-  /**
-   * Generates the query id of the submitted logical plan.
-   * @param logicalPlan the submitted logical plan
-   * @return query id
-   */
-  String generate(AvroLogicalPlan logicalPlan);
-}
+package edu.snu.mist.api.cep;

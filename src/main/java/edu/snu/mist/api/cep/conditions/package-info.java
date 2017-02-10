@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.mist.core.task;
-
-import edu.snu.mist.formats.avro.AvroLogicalPlan;
-import org.apache.reef.tang.annotations.DefaultImplementation;
-
 /**
- * This interface generates query ids of the submitted queries.
+ * Operators used for defining cep queries.
  */
-@DefaultImplementation(DefaultQueryIdGeneratorImpl.class)
-public interface QueryIdGenerator {
-  /**
-   * Generates the query id of the submitted logical plan.
-   * @param logicalPlan the submitted logical plan
-   * @return query id
-   */
-  String generate(AvroLogicalPlan logicalPlan);
-}
+package edu.snu.mist.api.cep.conditions;
