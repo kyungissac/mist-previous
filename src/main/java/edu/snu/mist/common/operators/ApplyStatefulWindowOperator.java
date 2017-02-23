@@ -45,6 +45,11 @@ public final class ApplyStatefulWindowOperator<IN, OUT>
    */
   private final ApplyStatefulFunction<IN, OUT> applyStatefulFunction;
 
+  /**
+   * Holds the state of applyStatefulFunction.
+   */
+  private Object applyStatefulFunctionState;
+
   @Inject
   private ApplyStatefulWindowOperator(
       @Parameter(SerializedUdf.class) final String serializedObject,
@@ -58,6 +63,7 @@ public final class ApplyStatefulWindowOperator<IN, OUT>
   @Inject
   public ApplyStatefulWindowOperator(final ApplyStatefulFunction<IN, OUT> applyStatefulFunction) {
     this.applyStatefulFunction = applyStatefulFunction;
+    this.applyStatefulFunctionState = applyStatefulFunction.getCurrentState();
   }
 
   @Override
@@ -72,6 +78,7 @@ public final class ApplyStatefulWindowOperator<IN, OUT>
       for (final IN data : value) {
         applyStatefulFunction.update(data);
       }
+      this.applyStatefulFunctionState = applyStatefulFunction.getCurrentState();
       final OUT operationResult = applyStatefulFunction.produceResult();
       LOG.log(Level.FINE, "{0} initializes and updates the operator state to {1} with input window {2} " +
           "which started at {3} and ended at {4}, and generates {5}",
@@ -93,13 +100,13 @@ public final class ApplyStatefulWindowOperator<IN, OUT>
   @Override
   public Map<String, Object> getOperatorState() {
     final Map<String, Object> stateMap = new HashMap<>();
-    stateMap.put("applyStatefulFunctionState", applyStatefulFunction.getCurrentState());
+    stateMap.put("applyStatefulFunctionState", applyStatefulFunctionState);
     return stateMap;
   }
 
   @Override
   public void setState(final Map<String, Object> loadedState) {
-    // TODO[MIST-435] Implement stateful loading for ApplyStatefulFunctions
-    // applyStatefulFunction.setFunctionState(loadedState.get("applyStatefulFunctionState"));
+    applyStatefulFunction.setFunctionState(loadedState.get("applyStatefulFunctionState"));
+    applyStatefulFunctionState = applyStatefulFunction.getCurrentState();
   }
 }

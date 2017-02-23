@@ -44,6 +44,11 @@ public final class ApplyStatefulOperator<IN, OUT>
    */
   private final ApplyStatefulFunction<IN, OUT> applyStatefulFunction;
 
+  /**
+   * Holds the state of applyStatefulFunction.
+   */
+  private Object applyStatefulFunctionState;
+
   @Inject
   private ApplyStatefulOperator(
       @Parameter(SerializedUdf.class) final String serializedObject,
@@ -58,11 +63,13 @@ public final class ApplyStatefulOperator<IN, OUT>
   public ApplyStatefulOperator(final ApplyStatefulFunction<IN, OUT> applyStatefulFunction) {
     this.applyStatefulFunction = applyStatefulFunction;
     this.applyStatefulFunction.initialize();
+    this.applyStatefulFunctionState = applyStatefulFunction.getCurrentState();
   }
 
   @Override
   public void processLeftData(final MistDataEvent input) {
     applyStatefulFunction.update((IN)input.getValue());
+    this.applyStatefulFunctionState = applyStatefulFunction.getCurrentState();
     final OUT output = applyStatefulFunction.produceResult();
 
     LOG.log(Level.FINE, "{0} updates the state to {1} with input {2}, and generates {3}",
@@ -80,13 +87,13 @@ public final class ApplyStatefulOperator<IN, OUT>
   @Override
   public Map<String, Object> getOperatorState() {
     final Map<String, Object> stateMap = new HashMap<>();
-    stateMap.put("applyStatefulFunctionState", applyStatefulFunction.getCurrentState());
+    stateMap.put("applyStatefulFunctionState", applyStatefulFunctionState);
     return stateMap;
   }
 
   @Override
   public void setState(final Map<String, Object> loadedState) {
-    // TODO[MIST-435] Implement stateful loading for ApplyStatefulFunctions
-    // applyStatefulFunction.setFunctionState(loadedState.get("applyStatefulFunctionState"));
+    applyStatefulFunction.setFunctionState(loadedState.get("applyStatefulFunctionState"));
+    applyStatefulFunctionState = applyStatefulFunction.getCurrentState();
   }
 }
