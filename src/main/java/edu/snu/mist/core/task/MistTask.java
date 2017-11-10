@@ -18,6 +18,7 @@ package edu.snu.mist.core.task;
 import edu.snu.mist.common.rpc.*;
 import edu.snu.mist.core.parameters.ClientToTaskServerPortNum;
 import edu.snu.mist.core.parameters.MasterToTaskServerPortNum;
+import edu.snu.mist.core.task.eventProcessors.GroupAllocationTable;
 import edu.snu.mist.formats.avro.ClientToTaskMessage;
 import edu.snu.mist.formats.avro.MasterToTaskMessage;
 import org.apache.avro.ipc.Server;
@@ -52,6 +53,7 @@ public final class MistTask implements Task {
   private final Server masterToTaskServer;
   private final Server clientToTaskServer;
   private final QueryManager queryManager;
+  private final TaskLoadManager taskLoadManager;
 
   private final Tang tang = Tang.Factory.getTang();
 
@@ -65,7 +67,9 @@ public final class MistTask implements Task {
   @Inject
   private MistTask(final QueryManager queryManager,
                    @Parameter(MasterToTaskServerPortNum.class) final int masterToTaskPortNum,
-                   @Parameter(ClientToTaskServerPortNum.class) final int clientToTaskPortNum) throws
+                   @Parameter(ClientToTaskServerPortNum.class) final int clientToTaskPortNum,
+                   final GroupAllocationTable groupAllocationTable,
+                   final TaskLoadManager taskLoadManager) throws
       InjectionException {
     this.countDownLatch = new CountDownLatch(1);
 
@@ -86,6 +90,7 @@ public final class MistTask implements Task {
         = tang.newInjector(clientToTaskServerConfBuilder.build()).getInstance(Server.class);
 
     this.queryManager = queryManager;
+    this.taskLoadManager = taskLoadManager;
   }
 
   @Override

@@ -293,6 +293,7 @@ public final class MistDriver {
             masterConfBuilder.bindSetEntry(ClientToTaskServerAddressSet.class,
                 taskHostAddress + ":" + clientToTaskRpcPort);
             taskConfBuilder.bindNamedParameter(MasterToTaskServerPortNum.class, String.valueOf(masterToTaskRpcPort));
+            taskConfBuilder.bindNamedParameter(TaskToMasterServerPortNum.class, String.valueOf(taskToMasterRpcPort));
             // submit a task
             taskContext.submitTask(
                 Configurations.merge(nameResolverConf, taskConfiguration, mistTaskConfigs.getConfiguration(),

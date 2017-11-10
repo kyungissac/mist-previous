@@ -42,20 +42,24 @@
       "fields":
       [
         {
-          "name": "TaskIPAddress",
+          "name": "taskIPAddress",
           "type": "IPAddress"
         },
         {
-          "name": "TotalLoad",
+          "name": "totalLoad",
           "type": "double"
         },
         {
-          "name": "GroupLoadMap",
+          "name": "groupLoadMap",
           "type":
           {
             "type": "map",
             "values": "double"
           }
+        },
+        {
+          "name": "measurementTime",
+          "type": "long"
         }
       ]
     },
@@ -65,11 +69,11 @@
       "fields":
       [
         {
-          "name": "IsSuccess",
+          "name": "isSuccess",
           "type": "boolean"
         },
         {
-          "name": "Msg",
+          "name": "msg",
           "type": "string"
         }
 
