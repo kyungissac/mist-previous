@@ -101,6 +101,7 @@ public final class MistMaster implements Task {
     countDownLatch.await();
     taskToMasterServer.close();
     clientToMasterServer.close();
+    taskManager.close();
     return new byte[0];
   }
 

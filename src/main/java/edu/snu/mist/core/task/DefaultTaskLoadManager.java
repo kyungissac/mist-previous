@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,40 +30,45 @@ import java.net.UnknownHostException;
 
 public final class DefaultTaskLoadManager implements TaskLoadManager {
 
-    private final GroupAllocationTable groupAllocationTable;
-    private final TaskToMasterMessage taskToMasterMessage;
-    private final int masterToTaskServerPortNum;
-
-    @Inject
-    private DefaultTaskLoadManager(final GroupAllocationTable groupAllocationTable,
-                                   final TaskToMasterMessage taskToMasterMessage,
-                                   @Parameter(MasterToTaskServerPortNum.class) final int masterToTaskPortNum) {
-        this.groupAllocationTable = groupAllocationTable;
-        this.taskToMasterMessage = taskToMasterMessage;
-        this.masterToTaskServerPortNum = masterToTaskPortNum;
+  private final GroupAllocationTable groupAllocationTable;
+  private final TaskToMasterMessage taskToMasterMessage;
+  private final int masterToTaskServerPortNum;
+  
+  @Inject
+  private DefaultTaskLoadManager(final GroupAllocationTable groupAllocationTable,
+                                 final TaskToMasterMessage taskToMasterMessage,
+                                 @Parameter(MasterToTaskServerPortNum.class) final int masterToTaskPortNum) {
+    this.groupAllocationTable = groupAllocationTable;
+    this.taskToMasterMessage = taskToMasterMessage;
+    this.masterToTaskServerPortNum = masterToTaskPortNum;
+  }
+  
+  @Override
+  public void sendLoadToMaster() throws AvroRemoteException, UnknownHostException {
+    final TaskLoadInfo taskLoadInfo = new TaskLoadInfo();
+    final IPAddress ipAddress = new IPAddress();
+  
+    ipAddress.setHostAddress(InetAddress.getLocalHost().getHostName());
+    ipAddress.setPort(masterToTaskServerPortNum);
+  
+    taskLoadInfo.setGroupLoadMap(null);
+    taskLoadInfo.setTaskIPAddress(ipAddress);
+    taskLoadInfo.setTotalLoad(getTaskLoad());
+    taskLoadInfo.setMeasurementTime(System.currentTimeMillis());
+    taskToMasterMessage.sendTaskLoadInfo(taskLoadInfo);
+  }
+  
+  // TODO: Get group load
+  private double getTaskLoad() {
+    double totalLoad = 0;
+    for (final EventProcessor eventProcessor : groupAllocationTable.getKeys()) {
+      totalLoad += eventProcessor.getLoad();
     }
-
-    @Override
-    public void sendLoadToMaster() throws AvroRemoteException, UnknownHostException {
-        final TaskLoadInfo taskLoadInfo = new TaskLoadInfo();
-        final IPAddress ipAddress = new IPAddress();
-
-        ipAddress.setHostAddress(InetAddress.getLocalHost().getHostName());
-        ipAddress.setPort(masterToTaskServerPortNum);
-
-        taskLoadInfo.setGroupLoadMap(null);
-        taskLoadInfo.setTaskIPAddress(ipAddress);
-        taskLoadInfo.setTotalLoad(getTaskLoad());
-        taskLoadInfo.setMeasurementTime(System.currentTimeMillis());
-        taskToMasterMessage.sendTaskLoadInfo(taskLoadInfo);
-    }
-
-    //TODO: Get group load
-    private double getTaskLoad() {
-        double totalLoad = 0;
-        for (final EventProcessor eventProcessor : groupAllocationTable.getKeys()) {
-            totalLoad += eventProcessor.getLoad();
-        }
-        return totalLoad / groupAllocationTable.size();
-    }
+    return totalLoad / groupAllocationTable.size();
+  }
+  
+  @Override
+  public void close() {
+  
+  }
 }

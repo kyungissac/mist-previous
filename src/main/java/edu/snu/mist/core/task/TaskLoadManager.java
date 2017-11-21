@@ -20,8 +20,12 @@ import org.apache.reef.tang.annotations.DefaultImplementation;
 
 import java.net.UnknownHostException;
 
+/**
+ * Runs on the Task and collects the load of the running queries on this Task.
+ * It sends the load information to the Master.
+ */
 @DefaultImplementation(DefaultTaskLoadManager.class)
-public interface TaskLoadManager {
+public interface TaskLoadManager extends AutoCloseable  {
 
     void sendLoadToMaster() throws AvroRemoteException, UnknownHostException;
 }

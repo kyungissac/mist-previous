@@ -15,9 +15,13 @@
  */
 package edu.snu.mist.master;
 
+import edu.snu.mist.formats.avro.IPAddress;
+import edu.snu.mist.formats.avro.TaskToMasterMessage;
 import org.apache.avro.ipc.Server;
 
 import javax.inject.Inject;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * The default implementation for EvaluatorManager.
@@ -26,9 +30,13 @@ public final class DefaultTaskManagerImpl implements TaskManager {
 
   // TODO[MIST-423]: Implement tracking evaluator stats in mist master
 
-  @Inject
-  private DefaultTaskManagerImpl(final Server server) {
+  private final Server server;
+  private final ConcurrentMap<IPAddress, TaskToMasterMessage> masterProxyMap;
 
+  @Inject
+  private DefaultTaskManagerImpl(final String server) {
+    this.server = server;
+    this.masterProxyMap = new ConcurrentHashMap<>();
   }
 
   @Override
